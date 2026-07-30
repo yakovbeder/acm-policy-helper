@@ -7,7 +7,7 @@ import {
 } from '../monaco/openshiftYamlTheme';
 import { lintYaml } from '../services/yamlLinter';
 
-interface YamlEditorProps {
+export interface YamlEditorProps {
   value: string;
   onChange: (value: string) => void;
   isDark?: boolean;

@@ -18,7 +18,7 @@ import {
 } from '@patternfly/react-core';
 import TrashIcon from '@patternfly/react-icons/dist/esm/icons/trash-icon';
 import { SelectField } from '../SelectField';
-import { YamlEditor } from '../YamlEditor';
+import { LazyYamlEditor } from '../LazyYamlEditor';
 import { formatLintErrors, lintYaml, splitMultiDocYaml } from '../../services/yamlLinter';
 import type { ComplianceType, ManifestInput, PolicyFormState } from '../../types';
 
@@ -130,7 +130,7 @@ export function ManifestsStep({ form, onChange, isDark }: Props) {
       >
         <Tab eventKey={0} title={<TabTitleText>Paste YAML</TabTitleText>}>
           <div style={{ marginTop: '1rem' }}>
-            <YamlEditor
+            <LazyYamlEditor
               value={pasteContent}
               onChange={setPasteContent}
               isDark={isDark}
@@ -280,7 +280,7 @@ export function ManifestsStep({ form, onChange, isDark }: Props) {
               </HelperText>
             </FormHelperText>
           )}
-          <YamlEditor
+          <LazyYamlEditor
             value={manifest.content}
             onChange={(content) =>
               updateManifest(manifest.id, {

@@ -13,7 +13,7 @@ import CheckCircleIcon from '@patternfly/react-icons/dist/esm/icons/check-circle
 import DownloadIcon from '@patternfly/react-icons/dist/esm/icons/download-icon';
 import CopyIcon from '@patternfly/react-icons/dist/esm/icons/copy-icon';
 import UploadIcon from '@patternfly/react-icons/dist/esm/icons/upload-icon';
-import { YamlEditor } from '../YamlEditor';
+import { LazyYamlEditor } from '../LazyYamlEditor';
 import { applyPolicy } from '../../services/api';
 import type { ApplyResult } from '../../types';
 
@@ -153,7 +153,7 @@ export function ReviewStep({
         </Alert>
       )}
 
-      <YamlEditor value={yaml} onChange={() => undefined} isDark={isDark} readOnly height="480px" />
+      <LazyYamlEditor value={yaml} onChange={() => undefined} isDark={isDark} readOnly height="480px" />
     </div>
   );
 }
