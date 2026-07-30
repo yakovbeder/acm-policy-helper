@@ -17,3 +17,17 @@ body {
 .monaco-editor .margin {
   border-radius: 4px;
 }
+
+/*
+ * PatternFly Radio uses grid-template-columns: auto 1fr.
+ * Pin column 1 so every __description shares the same left edge under the label.
+ */
+.policy-radio-options {
+  display: flex;
+  flex-direction: column;
+  row-gap: var(--pf-t--global--spacer--sm);
+}
+
+.policy-radio-options .pf-v6-c-radio {
+  grid-template-columns: var(--pf-t--global--font--size--body--default) 1fr;
+}

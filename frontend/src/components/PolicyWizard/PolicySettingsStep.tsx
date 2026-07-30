@@ -73,22 +73,24 @@ export function PolicySettingsStep({ form, onChange }: Props) {
       </FormGroup>
 
       <FormGroup label="Remediation" isRequired fieldId="remediation">
-        <Radio
-          id="remediation-inform"
-          name="remediation"
-          label="Inform"
-          description="Reports the violation, which requires manual remediation."
-          isChecked={form.remediationAction === 'inform'}
-          onChange={() => onChange({ remediationAction: 'inform' })}
-        />
-        <Radio
-          id="remediation-enforce"
-          name="remediation"
-          label="Enforce"
-          description="Automatically runs remediation action that is defined in the source, if this feature is supported."
-          isChecked={form.remediationAction === 'enforce'}
-          onChange={() => onChange({ remediationAction: 'enforce' })}
-        />
+        <div className="policy-radio-options" role="radiogroup" aria-label="Remediation">
+          <Radio
+            id="remediation-inform"
+            name="remediation"
+            label="Inform"
+            description="Reports the violation, which requires manual remediation."
+            isChecked={form.remediationAction === 'inform'}
+            onChange={() => onChange({ remediationAction: 'inform' })}
+          />
+          <Radio
+            id="remediation-enforce"
+            name="remediation"
+            label="Enforce"
+            description="Automatically runs remediation action that is defined in the source, if this feature is supported."
+            isChecked={form.remediationAction === 'enforce'}
+            onChange={() => onChange({ remediationAction: 'enforce' })}
+          />
+        </div>
       </FormGroup>
 
       <FormGroup label="Severity" fieldId="severity">
@@ -151,30 +153,36 @@ export function PolicySettingsStep({ form, onChange }: Props) {
       </FormGroup>
 
       <FormGroup label="Prune Object Behavior" fieldId="prune">
-        <Radio
-          id="prune-delete-if-created"
-          name="prune"
-          label="Delete If Created"
-          description="Attempts to delete objects known to be created by the policy when the policy is deleted."
-          isChecked={form.pruneObjectBehavior === 'DeleteIfCreated'}
-          onChange={() => onChange({ pruneObjectBehavior: 'DeleteIfCreated' })}
-        />
-        <Radio
-          id="prune-delete-all"
-          name="prune"
-          label="Delete All"
-          description="Attempts to delete all of the objects related to the deleted policy."
-          isChecked={form.pruneObjectBehavior === 'DeleteAll'}
-          onChange={() => onChange({ pruneObjectBehavior: 'DeleteAll' })}
-        />
-        <Radio
-          id="prune-none"
-          name="prune"
-          label="None"
-          description="Does not delete any resources when the policy is deleted. This value is used by default."
-          isChecked={form.pruneObjectBehavior === 'None'}
-          onChange={() => onChange({ pruneObjectBehavior: 'None' })}
-        />
+        <div
+          className="policy-radio-options"
+          role="radiogroup"
+          aria-label="Prune Object Behavior"
+        >
+          <Radio
+            id="prune-delete-if-created"
+            name="prune"
+            label="Delete If Created"
+            description="Attempts to delete objects known to be created by the policy when the policy is deleted."
+            isChecked={form.pruneObjectBehavior === 'DeleteIfCreated'}
+            onChange={() => onChange({ pruneObjectBehavior: 'DeleteIfCreated' })}
+          />
+          <Radio
+            id="prune-delete-all"
+            name="prune"
+            label="Delete All"
+            description="Attempts to delete all of the objects related to the deleted policy."
+            isChecked={form.pruneObjectBehavior === 'DeleteAll'}
+            onChange={() => onChange({ pruneObjectBehavior: 'DeleteAll' })}
+          />
+          <Radio
+            id="prune-none"
+            name="prune"
+            label="None"
+            description="Does not delete any resources when the policy is deleted. This value is used by default."
+            isChecked={form.pruneObjectBehavior === 'None'}
+            onChange={() => onChange({ pruneObjectBehavior: 'None' })}
+          />
+        </div>
       </FormGroup>
 
       <ChipInput
