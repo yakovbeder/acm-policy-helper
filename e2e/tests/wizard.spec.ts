@@ -1,9 +1,19 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixtureYaml = path.join(__dirname, 'fixtures', 'configmap.yaml');
+
+async function fillTypeahead(page: Page, parentId: string, value: string) {
+  const input = page.locator(`#${parentId} input[type="text"]`);
+  await input.click();
+  await input.fill(value);
+  const createOption = page.getByRole('option', { name: new RegExp(`"${value}"`) });
+  if (await createOption.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await createOption.click();
+  }
+}
 
 test.describe('ACM Policy Helper wizard', () => {
   test('loads the UI and shows wizard steps', async ({ page }) => {
@@ -26,13 +36,17 @@ test.describe('ACM Policy Helper wizard', () => {
     await page.goto('/');
 
     await page.locator('#policy-name').fill('e2e-config-policy');
-    await page.locator('#namespace').fill('policies');
+
+    // Namespace is a TypeaheadSelect — wait for loading to finish, then type
+    await expect(page.locator('#namespace')).toBeVisible({ timeout: 15_000 });
+    await fillTypeahead(page, 'namespace', 'policies');
     await page.getByRole('button', { name: 'Next' }).click();
 
-    await expect(page.getByText('Cluster label selectors')).toBeVisible();
+    // Placement step — wait for cluster catalog loading
+    await expect(page.getByText('Cluster label selectors')).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: 'Add matchLabel' }).click();
-    await page.getByLabel('label-key-0').fill('environment');
-    await page.getByLabel('label-value-0').fill('dev');
+    await fillTypeahead(page, 'label-key-0', 'environment');
+    await fillTypeahead(page, 'label-value-0', 'dev');
     await page.getByRole('button', { name: 'Next' }).click();
 
     await expect(page.getByRole('tab', { name: 'Paste YAML' })).toBeVisible();
