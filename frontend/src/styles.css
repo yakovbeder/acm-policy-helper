@@ -1,0 +1,19 @@
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+.pf-v6-c-wizard {
+  min-height: 70vh;
+}
+
+.monaco-editor,
+.monaco-editor-background,
+.monaco-editor .margin {
+  border-radius: 4px;
+}

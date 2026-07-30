@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: acm-policy-helper
+  namespace: acm-policy-helper
+  labels:
+    app.kubernetes.io/name: acm-policy-helper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: acm-policy-helper
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: acm-policy-helper
+    spec:
+      serviceAccountName: acm-policy-helper
+      containers:
+        - name: oauth-proxy
+          image: registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.20
+          imagePullPolicy: IfNotPresent
+          args:
+            - --https-address=:8443
+            - --provider=openshift
+            - --openshift-service-account=acm-policy-helper
+            - --upstream=http://127.0.0.1:8080
+            - --tls-cert=/etc/tls/private/tls.crt
+            - --tls-key=/etc/tls/private/tls.key
+            - --cookie-secret-file=/etc/proxy/secrets/session_secret
+            - --openshift-sar={"namespace":"acm-policy-helper","resource":"services","verb":"get","resourceName":"acm-policy-helper"}
+            - --pass-user-bearer-token=false
+            - --pass-access-token=false
+            - --skip-auth-regex=^/api/health$
+          ports:
+            - name: https
+              containerPort: 8443
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          volumeMounts:
+            - name: proxy-tls
+              mountPath: /etc/tls/private
+              readOnly: true
+            - name: proxy-secret
+              mountPath: /etc/proxy/secrets
+              readOnly: true
+        - name: acm-policy-helper
+          image: IMAGE_PLACEHOLDER
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8080"
+            - name: PUBLIC_DIR
+              value: /opt/app-root/src/public
+            - name: POLICY_GENERATOR_BIN
+              value: /usr/local/bin/PolicyGenerator
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            runAsNonRoot: true
+      volumes:
+        - name: proxy-tls
+          secret:
+            secretName: acm-policy-helper-tls
+        - name: proxy-secret
+          secret:
+            secretName: acm-policy-helper-proxy

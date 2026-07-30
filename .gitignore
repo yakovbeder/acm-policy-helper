@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+backend/public/
+*.log
+.env
+.DS_Store
+coverage/
+*.tsbuildinfo
+.vite/
+tmp/
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,65 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: acm-policy-helper
+  labels:
+    app.kubernetes.io/name: acm-policy-helper
+rules:
+  - apiGroups:
+      - policy.open-cluster-management.io
+    resources:
+      - policies
+      - placementbindings
+      - configurationpolicies
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - cluster.open-cluster-management.io
+    resources:
+      - placements
+      - managedclustersetbindings
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: acm-policy-helper
+  labels:
+    app.kubernetes.io/name: acm-policy-helper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: acm-policy-helper
+subjects:
+  - kind: ServiceAccount
+    name: acm-policy-helper
+    namespace: acm-policy-helper
+---
+# Allow oauth-proxy to create TokenReviews / SubjectAccessReviews
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: acm-policy-helper-oauth-proxy
+  labels:
+    app.kubernetes.io/name: acm-policy-helper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - kind: ServiceAccount
+    name: acm-policy-helper
+    namespace: acm-policy-helper
