@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { CodeEditor, Language } from '@patternfly/react-code-editor';
 import type { editor } from 'monaco-editor';
+import {
+  defineOpenShiftYamlThemes,
+  openshiftYamlThemeName,
+} from '../monaco/openshiftYamlTheme';
 import { lintYaml } from '../services/yamlLinter';
 
 interface YamlEditorProps {
@@ -22,6 +26,7 @@ export function YamlEditor({
 }: YamlEditorProps) {
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof import('monaco-editor') | null>(null);
+  const themeName = openshiftYamlThemeName(isDark);
 
   const lintErrors = useMemo(() => lintYaml(value), [value]);
 
@@ -50,6 +55,15 @@ export function YamlEditor({
     monaco.editor.setModelMarkers(model, 'yaml-linter', markers);
   }, [lintErrors]);
 
+  useEffect(() => {
+    const monaco = monacoRef.current;
+    if (!monaco) {
+      return;
+    }
+    defineOpenShiftYamlThemes(monaco.editor);
+    monaco.editor.setTheme(themeName);
+  }, [themeName]);
+
   return (
     <CodeEditor
       isDarkTheme={isDark}
@@ -60,9 +74,17 @@ export function YamlEditor({
       onChange={(val) => onChange(val || '')}
       language={Language.yaml}
       height={height}
+      editorProps={{
+        theme: themeName,
+        beforeMount: (monaco) => {
+          defineOpenShiftYamlThemes(monaco.editor);
+        },
+      }}
       onEditorDidMount={(ed, monaco) => {
         editorRef.current = ed;
         monacoRef.current = monaco as typeof import('monaco-editor');
+        defineOpenShiftYamlThemes(monaco.editor);
+        monaco.editor.setTheme(themeName);
       }}
     />
   );
