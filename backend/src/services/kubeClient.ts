@@ -42,15 +42,22 @@ function pluralizeKind(kind: string): string {
   return `${lower}s`;
 }
 
+function isClusterCatalogDisabled(): boolean {
+  const flag = process.env.DISABLE_CLUSTER_CATALOG;
+  return flag === '1' || flag === 'true';
+}
+
 function getKubeConfig(): k8s.KubeConfig {
   const kc = new k8s.KubeConfig();
-  if (process.env.KUBECONFIG || process.env.KUBERNETES_SERVICE_HOST) {
-    try {
-      kc.loadFromCluster();
-      return kc;
-    } catch {
-      // fall through to default
-    }
+  // In-cluster service account (OpenShift / Kubernetes pods)
+  if (process.env.KUBERNETES_SERVICE_HOST) {
+    kc.loadFromCluster();
+    return kc;
+  }
+  // Explicit kubeconfig path for local development
+  if (process.env.KUBECONFIG) {
+    kc.loadFromFile(process.env.KUBECONFIG);
+    return kc;
   }
   kc.loadFromDefault();
   return kc;
@@ -157,6 +164,9 @@ async function applyObject(
 }
 
 export async function listNamespaces(): Promise<string[]> {
+  if (isClusterCatalogDisabled()) {
+    return [];
+  }
   const kc = getKubeConfig();
   const coreApi = kc.makeApiClient(k8s.CoreV1Api);
   const response = await coreApi.listNamespace({});
@@ -172,6 +182,9 @@ interface NamedCustomObject {
 }
 
 export async function listManagedClusterSets(): Promise<string[]> {
+  if (isClusterCatalogDisabled()) {
+    return [];
+  }
   const kc = getKubeConfig();
   const customApi = kc.makeApiClient(k8s.CustomObjectsApi);
   const response = (await customApi.listClusterCustomObject({
@@ -192,6 +205,9 @@ export interface ClusterLabelCatalog {
 }
 
 export async function listManagedClusterLabels(): Promise<ClusterLabelCatalog> {
+  if (isClusterCatalogDisabled()) {
+    return { keys: [], valuesByKey: {} };
+  }
   const kc = getKubeConfig();
   const customApi = kc.makeApiClient(k8s.CustomObjectsApi);
   const response = (await customApi.listClusterCustomObject({

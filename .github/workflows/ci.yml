@@ -64,6 +64,9 @@ jobs:
           POLICY_GENERATOR_BIN: ${{ github.workspace }}/e2e/bin/PolicyGenerator
           PUBLIC_DIR: ${{ github.workspace }}/backend/public
           PORT: '4173'
+          DISABLE_CLUSTER_CATALOG: 'true'
+          KUBECONFIG: ''
+          KUBERNETES_SERVICE_HOST: ''
         run: npm run test:e2e
       - uses: actions/upload-artifact@v5
         if: failure()

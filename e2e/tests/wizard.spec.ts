@@ -1,17 +1,20 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixtureYaml = path.join(__dirname, 'fixtures', 'configmap.yaml');
 
-async function fillTypeahead(page: Page, parentId: string, value: string) {
-  const input = page.locator(`#${parentId} input[type="text"]`);
-  await input.click();
-  await input.fill(value);
+/** Fill a PF6 TypeaheadSelect (role=combobox) that may already have a value. */
+async function fillCreatableTypeahead(page: Page, combobox: Locator, value: string) {
+  await expect(combobox).toBeVisible({ timeout: 15_000 });
+  await combobox.click();
+  await combobox.fill(value);
   const createOption = page.getByRole('option', { name: new RegExp(`"${value}"`) });
   if (await createOption.isVisible({ timeout: 2000 }).catch(() => false)) {
     await createOption.click();
+  } else {
+    await combobox.press('Enter');
   }
 }
 
@@ -37,16 +40,21 @@ test.describe('ACM Policy Helper wizard', () => {
 
     await page.locator('#policy-name').fill('e2e-config-policy');
 
-    // Namespace is a TypeaheadSelect — wait for loading to finish, then type
-    await expect(page.locator('#namespace')).toBeVisible({ timeout: 15_000 });
-    await fillTypeahead(page, 'namespace', 'policies');
+    // Wait for NamespaceSelect to finish loading, then set namespace via typeahead.
+    await expect(page.getByText('Loading namespaces…')).toBeHidden({ timeout: 15_000 });
+    const namespaceInput = page.getByRole('combobox').first();
+    await fillCreatableTypeahead(page, namespaceInput, 'policies');
     await page.getByRole('button', { name: 'Next' }).click();
 
-    // Placement step — wait for cluster catalog loading
+    // Placement step — wait for cluster catalog loading to finish
+    await expect(page.getByText(/Loading ManagedClusterSets/)).toBeHidden({ timeout: 15_000 });
     await expect(page.getByText('Cluster label selectors')).toBeVisible({ timeout: 15_000 });
     await page.getByRole('button', { name: 'Add matchLabel' }).click();
-    await fillTypeahead(page, 'label-key-0', 'environment');
-    await fillTypeahead(page, 'label-value-0', 'dev');
+
+    const labelKey = page.getByPlaceholder('Select label key');
+    const labelValue = page.getByPlaceholder('Select label value');
+    await fillCreatableTypeahead(page, labelKey, 'environment');
+    await fillCreatableTypeahead(page, labelValue, 'dev');
     await page.getByRole('button', { name: 'Next' }).click();
 
     await expect(page.getByRole('tab', { name: 'Paste YAML' })).toBeVisible();
@@ -68,4 +76,3 @@ test.describe('ACM Policy Helper wizard', () => {
     await expect(page.getByRole('button', { name: 'Apply to cluster' })).toBeVisible();
   });
 });
-

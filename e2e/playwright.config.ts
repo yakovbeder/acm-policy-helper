@@ -35,6 +35,10 @@ export default defineConfig({
           PUBLIC_DIR: `${process.cwd()}/../backend/public`,
           POLICY_GENERATOR_BIN:
             process.env.POLICY_GENERATOR_BIN || `${process.cwd()}/bin/PolicyGenerator`,
+          // E2E runs without a cluster; skip kube catalog calls so the UI loads instantly.
+          DISABLE_CLUSTER_CATALOG: 'true',
+          KUBECONFIG: '',
+          KUBERNETES_SERVICE_HOST: '',
         },
       },
 });
