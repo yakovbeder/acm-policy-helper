@@ -144,6 +144,72 @@ async function applyObject(
   }
 }
 
+export async function listNamespaces(): Promise<string[]> {
+  const kc = getKubeConfig();
+  const coreApi = kc.makeApiClient(k8s.CoreV1Api);
+  const response = await coreApi.listNamespace({});
+  const items = response.items ?? [];
+  return items
+    .map((ns) => ns.metadata?.name)
+    .filter((name): name is string => Boolean(name))
+    .sort((a, b) => a.localeCompare(b));
+}
+
+interface NamedCustomObject {
+  metadata?: { name?: string; labels?: Record<string, string> };
+}
+
+export async function listManagedClusterSets(): Promise<string[]> {
+  const kc = getKubeConfig();
+  const customApi = kc.makeApiClient(k8s.CustomObjectsApi);
+  const response = (await customApi.listClusterCustomObject({
+    group: 'cluster.open-cluster-management.io',
+    version: 'v1beta2',
+    plural: 'managedclustersets',
+  })) as { items?: NamedCustomObject[] };
+
+  return (response.items ?? [])
+    .map((item) => item.metadata?.name)
+    .filter((name): name is string => Boolean(name))
+    .sort((a, b) => a.localeCompare(b));
+}
+
+export interface ClusterLabelCatalog {
+  keys: string[];
+  valuesByKey: Record<string, string[]>;
+}
+
+export async function listManagedClusterLabels(): Promise<ClusterLabelCatalog> {
+  const kc = getKubeConfig();
+  const customApi = kc.makeApiClient(k8s.CustomObjectsApi);
+  const response = (await customApi.listClusterCustomObject({
+    group: 'cluster.open-cluster-management.io',
+    version: 'v1',
+    plural: 'managedclusters',
+  })) as { items?: NamedCustomObject[] };
+
+  const valuesByKey: Record<string, Set<string>> = {};
+  for (const item of response.items ?? []) {
+    const labels = item.metadata?.labels || {};
+    for (const [key, value] of Object.entries(labels)) {
+      if (!valuesByKey[key]) {
+        valuesByKey[key] = new Set();
+      }
+      if (value !== undefined && value !== null && String(value).length) {
+        valuesByKey[key].add(String(value));
+      }
+    }
+  }
+
+  const keys = Object.keys(valuesByKey).sort((a, b) => a.localeCompare(b));
+  return {
+    keys,
+    valuesByKey: Object.fromEntries(
+      keys.map((key) => [key, Array.from(valuesByKey[key]).sort((a, b) => a.localeCompare(b))])
+    ),
+  };
+}
+
 export async function applyYaml(yamlContent: string): Promise<ApplyResult[]> {
   const docs = (yaml.loadAll(yamlContent) as (KubeObject | null)[]).filter(
     (d): d is KubeObject => Boolean(d && typeof d === 'object' && d.kind)

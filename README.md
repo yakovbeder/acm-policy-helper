@@ -27,71 +27,30 @@ Browser → OpenShift Route → ose-oauth-proxy-rhel9 → ACM Policy Helper (Exp
                                                       └─ PolicyGenerator binary
 ```
 
-## Local development
+## Deploy on OpenShift (recommended)
 
-Requirements: Node.js 20+, optionally a local `PolicyGenerator` binary.
+Requires `oc` logged into a cluster that can pull:
 
-```bash
-# Install dependencies
-npm install
+- App image: `quay.io/rh-ee-ybeder/acm-policy-helper:latest`
+- OAuth proxy: `registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.20` (cluster pull secret / entitlement)
 
-# Download PolicyGenerator for generate testing / e2e
-npm run download:pg
-export POLICY_GENERATOR_BIN="$PWD/e2e/bin/PolicyGenerator"
-
-# Run API + UI
-npm run dev
-```
-
-- UI: http://localhost:5173
-- API: http://localhost:8080
-
-### Tests
+### Install
 
 ```bash
-# Unit tests (backend + frontend)
-npm test
-
-# E2E (Playwright) — builds app, starts server, runs wizard flow
-npm run build
-npm run install:browsers -w e2e
-POLICY_GENERATOR_BIN="$PWD/e2e/bin/PolicyGenerator" npm run test:e2e
+./deploy/install.sh
 ```
 
-## CI / GitHub Actions
-
-Workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
-
-On every PR/push to `main`:
-
-1. Backend unit tests + coverage
-2. Frontend unit tests + coverage
-3. E2E Playwright tests (with PolicyGenerator binary)
-4. On push to `main` only: build and push image to `quay.io/rh-ee-ybeder/acm-policy-helper`
-
-Required GitHub secrets for image push:
-
-- `QUAY_USERNAME`
-- `QUAY_PASSWORD`
-
-## Build container image
+Optional: pin a different image tag:
 
 ```bash
-podman build -t quay.io/rh-ee-ybeder/acm-policy-helper:latest .
-podman push quay.io/rh-ee-ybeder/acm-policy-helper:latest
+IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:<tag> ./deploy/install.sh
 ```
 
-The image is based on `registry.access.redhat.com/ubi9/nodejs-20` and embeds PolicyGenerator v1.19.0.
+The script creates the namespace, oauth-proxy session secret, applies `deploy/` manifests, sets the image, waits for rollout, and prints the Route URL.
 
-## Deploy on OpenShift
+Open that URL in a browser. You are redirected to the **OpenShift OAuth** login page; after authentication the UI loads.
 
-```bash
-IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:latest ./deploy/install.sh
-```
-
-Or manually:
-
-1. Create the namespace and proxy cookie secret:
+### Manual deploy
 
 ```bash
 oc apply -f deploy/namespace.yaml
@@ -101,25 +60,16 @@ oc create secret generic acm-policy-helper-proxy \
   -n acm-policy-helper \
   --from-literal=session_secret="$SESSION_SECRET" \
   --dry-run=client -o yaml | oc apply -f -
-```
 
-2. Apply manifests:
-
-```bash
 oc apply -k deploy/
 ```
 
-3. Open the Route URL. You should be redirected to the **OpenShift OAuth login** page. After authentication, the ACM Policy Helper UI loads.
+Then open the Route:
 
-### OAuth proxy image
-
-The deployment uses:
-
-```text
-registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.20
+```bash
+oc get route acm-policy-helper -n acm-policy-helper \
+  -o jsonpath='https://{.spec.host}{"\n"}'
 ```
-
-Ensure the cluster can pull from `registry.redhat.io` (global pull secret / entitled pull). Link a pull secret to the `acm-policy-helper` ServiceAccount if needed.
 
 ### RBAC
 
@@ -128,26 +78,73 @@ The app ServiceAccount can create/update:
 - `policies`, `placementbindings` (`policy.open-cluster-management.io`)
 - `placements`, `managedclustersetbindings` (`cluster.open-cluster-management.io`)
 
-## Usage
+Authenticated users need permission to `get` the `acm-policy-helper` Service (oauth-proxy SAR). The install manifests include a RoleBinding for `system:authenticated`.
 
-1. **Policy settings** — name, namespace, remediation, severity, compliance type, annotations fields
+TLS uses the OpenShift service CA (`service.beta.openshift.io/serving-cert-secret-name`), a reencrypt Route, and oauth-proxy with the cluster trusted CA bundle (`ocp-injected-certs`).
+
+### Usage
+
+1. **Policy settings** — name, namespace, remediation, severity, compliance type, annotations
 2. **Placement** — cluster label selectors **or** ManagedClusterSets (+ matchExpressions)
 3. **Manifests** — paste or upload the YAML resources to wrap
-4. **Review & apply** — preview generated YAML, download, copy, or apply to the cluster
+4. **Review & apply** — preview generated YAML, download, copy, or apply to the hub
 
-## API
+---
 
-### `POST /api/generate`
+## Alternative: build and push your own image
 
-Accepts policy form JSON and returns `{ "yaml": "..." }`.
+Use this if you want a custom tag, a private registry, or to iterate on changes before publishing.
 
-### `POST /api/apply`
+```bash
+podman build -t quay.io/<org>/acm-policy-helper:latest .
+podman push quay.io/<org>/acm-policy-helper:latest
 
-Accepts `{ "yaml": "..." }` and applies resources using the in-cluster ServiceAccount.
+IMAGE=quay.io/<org>/acm-policy-helper:latest ./deploy/install.sh
+```
 
-### `GET /api/health`
+The image is based on `registry.access.redhat.com/ubi9/nodejs-20` and embeds PolicyGenerator v1.19.0.
 
-Health check (also used by probes; optionally skipped by oauth-proxy).
+CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs unit + e2e tests on push/PR. Build and push the container image locally (or from your registry pipeline), not from GitHub Actions.
+
+---
+
+## Alternative: local development
+
+Requirements: Node.js 20+ (CI uses 22), optionally a local `PolicyGenerator` binary.
+
+```bash
+npm install
+
+# Optional: PolicyGenerator for /api/generate and e2e
+npm run download:pg
+export POLICY_GENERATOR_BIN="$PWD/e2e/bin/PolicyGenerator"
+
+npm run dev
+```
+
+- UI: http://localhost:5173 (Vite proxies `/api` to the backend)
+- API: http://localhost:8080
+
+### Tests
+
+```bash
+npm test
+
+npm run build
+npm run install:browsers -w e2e
+POLICY_GENERATOR_BIN="$PWD/e2e/bin/PolicyGenerator" npm run test:e2e
+```
+
+### Local API endpoints
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/generate` | Form JSON → `{ "yaml": "..." }` |
+| `POST` | `/api/apply` | `{ "yaml": "..." }` applied with the ServiceAccount (in-cluster) |
+| `GET` | `/api/namespaces` | List hub namespaces for the policy namespace picker |
+| `GET` | `/api/cluster-sets` | List ManagedClusterSets for placement targeting |
+| `GET` | `/api/cluster-labels` | List ManagedCluster label keys/values for selectors |
+| `GET` | `/api/health` | Health check / probes |
 
 ## License
 

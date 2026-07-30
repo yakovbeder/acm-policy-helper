@@ -43,3 +43,38 @@ export async function applyPolicy(yamlContent: string): Promise<ApplyResult[]> {
   }
   return data.results as ApplyResult[];
 }
+
+export async function fetchNamespaces(): Promise<string[]> {
+  const res = await fetch('/api/namespaces');
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to list namespaces');
+  }
+  return (data.namespaces as string[]) || [];
+}
+
+export async function fetchClusterSets(): Promise<string[]> {
+  const res = await fetch('/api/cluster-sets');
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to list ManagedClusterSets');
+  }
+  return (data.clusterSets as string[]) || [];
+}
+
+export interface ClusterLabelCatalog {
+  keys: string[];
+  valuesByKey: Record<string, string[]>;
+}
+
+export async function fetchClusterLabels(): Promise<ClusterLabelCatalog> {
+  const res = await fetch('/api/cluster-labels');
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to list managed cluster labels');
+  }
+  return {
+    keys: (data.keys as string[]) || [],
+    valuesByKey: (data.valuesByKey as Record<string, string[]>) || {},
+  };
+}

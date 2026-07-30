@@ -8,18 +8,18 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE: quay.io/rh-ee-ybeder/acm-policy-helper
   POLICY_GENERATOR_VERSION: v1.19.0
+  NODE_VERSION: '22'
 
 jobs:
   unit-backend:
     name: Backend unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
       - run: npm run lint -w backend
@@ -29,10 +29,10 @@ jobs:
     name: Frontend unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
       - run: npm run lint -w frontend
@@ -43,10 +43,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [unit-backend, unit-frontend]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
       - name: Download PolicyGenerator
@@ -65,43 +65,9 @@ jobs:
           PUBLIC_DIR: ${{ github.workspace }}/backend/public
           PORT: '4173'
         run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-report
           path: e2e/playwright-report/
           retention-days: 7
-
-  build-and-push:
-    name: Build and push image
-    runs-on: ubuntu-latest
-    needs: [e2e]
-    if: github.event_name != 'pull_request'
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set image tags
-        id: meta
-        run: |
-          SHA_SHORT="${GITHUB_SHA::8}"
-          echo "tags=${IMAGE}:latest,${IMAGE}:${SHA_SHORT}" >> "$GITHUB_OUTPUT"
-          echo "sha_short=${SHA_SHORT}" >> "$GITHUB_OUTPUT"
-      - name: Login to Quay
-        uses: docker/login-action@v3
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_USERNAME }}
-          password: ${{ secrets.QUAY_PASSWORD }}
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-      - name: Summary
-        run: |
-          echo "### Image pushed" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${IMAGE}:latest\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`${IMAGE}:${{ steps.meta.outputs.sha_short }}\`" >> "$GITHUB_STEP_SUMMARY"

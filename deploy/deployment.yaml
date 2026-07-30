@@ -21,14 +21,21 @@ spec:
           image: registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.20
           imagePullPolicy: IfNotPresent
           args:
-            - --https-address=:8443
             - --provider=openshift
-            - --openshift-service-account=acm-policy-helper
+            - --https-address=:8443
+            - --http-address=
+            - --email-domain=*
             - --upstream=http://127.0.0.1:8080
+            - --openshift-service-account=acm-policy-helper
             - --tls-cert=/etc/tls/private/tls.crt
             - --tls-key=/etc/tls/private/tls.key
+            - --client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token
             - --cookie-secret-file=/etc/proxy/secrets/session_secret
             - --openshift-sar={"namespace":"acm-policy-helper","resource":"services","verb":"get","resourceName":"acm-policy-helper"}
+            - --openshift-ca=/etc/pki/tls/cert.pem
+            - --openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+            - --openshift-ca=/etc/proxy/certs/ca-bundle.crt
+            - --pass-basic-auth=false
             - --pass-user-bearer-token=false
             - --pass-access-token=false
             - --skip-auth-regex=^/api/health$
@@ -49,6 +56,9 @@ spec:
               readOnly: true
             - name: proxy-secret
               mountPath: /etc/proxy/secrets
+              readOnly: true
+            - name: ocp-injected-certs
+              mountPath: /etc/proxy/certs
               readOnly: true
         - name: acm-policy-helper
           image: IMAGE_PLACEHOLDER
@@ -96,3 +106,6 @@ spec:
         - name: proxy-secret
           secret:
             secretName: acm-policy-helper-proxy
+        - name: ocp-injected-certs
+          configMap:
+            name: ocp-injected-certs

@@ -1,4 +1,5 @@
 import {
+  Brand,
   Content,
   ContentVariants,
   Masthead,
@@ -16,6 +17,8 @@ import {
 import { PolicyWizard } from './components/PolicyWizard/PolicyWizard';
 import { ThemeToggle } from './components/ThemeToggle';
 import { useTheme } from './hooks/useTheme';
+import redhatLogo from '/Logo-Red.svg';
+import redhatLogoDark from '/Logo-Red-Reverse.svg';
 
 export default function App() {
   const { theme, toggleTheme, isDark } = useTheme();
@@ -24,14 +27,29 @@ export default function App() {
     <Masthead>
       <MastheadMain>
         <MastheadBrand>
-          <Title headingLevel="h1" size="lg">
-            ACM Policy Helper
-          </Title>
+          <Brand
+            src={isDark ? redhatLogoDark : redhatLogo}
+            alt="Red Hat"
+            heights={{ default: '36px' }}
+          />
         </MastheadBrand>
       </MastheadMain>
       <MastheadContent>
-        <Toolbar id="toolbar" isFullHeight isStatic>
+        <Toolbar id="toolbar" isFullHeight isStatic style={{ width: '100%' }}>
           <ToolbarContent>
+            <ToolbarItem>
+              <div>
+                <Title headingLevel="h1" size="lg">
+                  ACM Policy Helper
+                </Title>
+                <Content
+                  component={ContentVariants.small}
+                  style={{ color: 'var(--pf-t--global--text--color--subtle)' }}
+                >
+                  Generate ACM Configuration Policies from YAML
+                </Content>
+              </div>
+            </ToolbarItem>
             <ToolbarGroup align={{ default: 'alignEnd' }}>
               <ToolbarItem>
                 <ThemeToggle theme={theme} onToggle={toggleTheme} />

@@ -6,12 +6,12 @@ metadata:
   labels:
     app.kubernetes.io/name: acm-policy-helper
   annotations:
-    service.alpha.openshift.io/serving-cert-secret-name: acm-policy-helper-tls
+    service.beta.openshift.io/serving-cert-secret-name: acm-policy-helper-tls
 spec:
   ports:
     - name: https
       port: 8443
-      targetPort: 8443
+      targetPort: https
       protocol: TCP
   selector:
     app.kubernetes.io/name: acm-policy-helper

@@ -6,12 +6,16 @@ import {
   HelperText,
   HelperTextItem,
   Radio,
-  TextInput,
+  Spinner,
 } from '@patternfly/react-core';
 import MinusCircleIcon from '@patternfly/react-icons/dist/esm/icons/minus-circle-icon';
 import PlusCircleIcon from '@patternfly/react-icons/dist/esm/icons/plus-circle-icon';
-import { ChipInput } from '../ChipInput';
+import {
+  ClusterMultiSelect,
+  ClusterTypeaheadSelect,
+} from '../ClusterCatalogSelect';
 import { SelectField } from '../SelectField';
+import { useClusterCatalog } from '../../hooks/useClusterCatalog';
 import type { MatchExpression, PlacementConfig, PolicyFormState } from '../../types';
 
 interface Props {
@@ -23,6 +27,7 @@ const OPERATORS: MatchExpression['operator'][] = ['In', 'NotIn', 'Exists', 'Does
 
 export function PlacementStep({ form, onChange }: Props) {
   const placement = form.placement;
+  const { clusterSets, labels, loading, error } = useClusterCatalog();
 
   const updatePlacement = (patch: Partial<PlacementConfig>) => {
     onChange({ placement: { ...placement, ...patch } });
@@ -78,6 +83,16 @@ export function PlacementStep({ form, onChange }: Props) {
     setExpressions(next);
   };
 
+  if (loading) {
+    return (
+      <HelperText>
+        <HelperTextItem icon={<Spinner size="sm" />}>
+          Loading ManagedClusterSets and cluster labels…
+        </HelperTextItem>
+      </HelperText>
+    );
+  }
+
   return (
     <Form>
       <FormGroup label="Placement targeting" fieldId="placement-mode">
@@ -85,7 +100,7 @@ export function PlacementStep({ form, onChange }: Props) {
           id="mode-labels"
           name="placement-mode"
           label="Cluster label selectors"
-          description="Select managed clusters using matchLabels and matchExpressions."
+          description="Select managed clusters using matchLabels and matchExpressions (ACM Placement predicate)."
           isChecked={placement.mode === 'labelSelector'}
           onChange={() => updatePlacement({ mode: 'labelSelector' })}
         />
@@ -93,64 +108,89 @@ export function PlacementStep({ form, onChange }: Props) {
           id="mode-clustersets"
           name="placement-mode"
           label="ManagedClusterSets"
-          description="Select clusters from named cluster sets, with optional label predicates."
+          description="Target clusters via Placement spec.clusterSets plus optional label predicates."
           isChecked={placement.mode === 'clusterSets'}
           onChange={() => updatePlacement({ mode: 'clusterSets' })}
         />
       </FormGroup>
 
+      {error && (
+        <FormHelperText>
+          <HelperText>
+            <HelperTextItem>
+              Could not fully load hub cluster catalog ({error}). You can still type values
+              manually where creatable fields allow it.
+            </HelperTextItem>
+          </HelperText>
+        </FormHelperText>
+      )}
+
       {placement.mode === 'labelSelector' && (
-        <>
-          <FormGroup label="matchLabels" fieldId="match-labels">
-            {matchLabelsEntries.map(([key, value], index) => (
-              <div
-                key={`label-${index}`}
-                style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}
-              >
-                <TextInput
-                  aria-label={`label-key-${index}`}
-                  placeholder="key"
-                  value={key}
-                  onChange={(_e, v) => setMatchLabel(index, v, value)}
-                />
-                <TextInput
-                  aria-label={`label-value-${index}`}
-                  placeholder="value"
-                  value={value}
-                  onChange={(_e, v) => setMatchLabel(index, key, v)}
-                />
-                <Button
-                  variant="plain"
-                  icon={<MinusCircleIcon />}
-                  aria-label={`Remove label ${index}`}
-                  onClick={() => removeMatchLabel(index)}
-                />
-              </div>
-            ))}
-            <Button variant="link" icon={<PlusCircleIcon />} onClick={addMatchLabel}>
-              Add matchLabel
-            </Button>
-          </FormGroup>
-        </>
+        <FormGroup label="matchLabels" fieldId="match-labels">
+          {matchLabelsEntries.map(([key, value], index) => (
+            <div
+              key={`label-${index}`}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr auto',
+                gap: '0.5rem',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <ClusterTypeaheadSelect
+                id={`label-key-${index}`}
+                value={key}
+                options={labels.keys}
+                placeholder="Select label key"
+                onChange={(v) => setMatchLabel(index, v, value)}
+              />
+              <ClusterTypeaheadSelect
+                id={`label-value-${index}`}
+                value={value}
+                options={labels.valuesByKey[key] || []}
+                placeholder="Select label value"
+                onChange={(v) => setMatchLabel(index, key, v)}
+              />
+              <Button
+                variant="plain"
+                icon={<MinusCircleIcon />}
+                aria-label={`Remove label ${index}`}
+                onClick={() => removeMatchLabel(index)}
+              />
+            </div>
+          ))}
+          <Button variant="link" icon={<PlusCircleIcon />} onClick={addMatchLabel}>
+            Add matchLabel
+          </Button>
+          <FormHelperText>
+            <HelperText>
+              <HelperTextItem>
+                Keys and values are loaded from ManagedCluster labels on the hub.
+              </HelperTextItem>
+            </HelperText>
+          </FormHelperText>
+        </FormGroup>
       )}
 
       {placement.mode === 'clusterSets' && (
-        <>
-          <ChipInput
-            label="Cluster sets"
+        <FormGroup label="Cluster sets" isRequired fieldId="cluster-sets">
+          <ClusterMultiSelect
+            id="cluster-sets"
             values={placement.clusterSets}
-            onChange={(clusterSets) => updatePlacement({ clusterSets })}
-            placeholder="default"
+            options={clusterSets}
+            placeholder="Select ManagedClusterSets"
+            onChange={(next) => updatePlacement({ clusterSets: next })}
           />
           <FormHelperText>
             <HelperText>
               <HelperTextItem>
-                A ManagedClusterSetBinding will be generated for each cluster set in the policy
-                namespace.
+                {clusterSets.length
+                  ? `Available on hub: ${clusterSets.join(', ')}. A ManagedClusterSetBinding is generated for each selected set in the policy namespace.`
+                  : 'No ManagedClusterSets found. Ensure ACM is installed and this app can list managedclustersets.'}
               </HelperTextItem>
             </HelperText>
           </FormHelperText>
-        </>
+        </FormGroup>
       )}
 
       <FormGroup label="matchExpressions" fieldId="match-expressions">
@@ -164,11 +204,12 @@ export function PlacementStep({ form, onChange }: Props) {
               marginBottom: '0.5rem',
             }}
           >
-            <TextInput
-              aria-label={`expr-key-${index}`}
-              placeholder="key"
+            <ClusterTypeaheadSelect
+              id={`expr-key-${index}`}
               value={expr.key}
-              onChange={(_e, v) => updateExpression(index, { key: v })}
+              options={labels.keys}
+              placeholder="Select label key"
+              onChange={(v) => updateExpression(index, { key: v })}
             />
             <SelectField
               id={`expr-operator-${index}`}
@@ -181,19 +222,17 @@ export function PlacementStep({ form, onChange }: Props) {
               }
               options={OPERATORS.map((op) => ({ value: op, label: op }))}
             />
-            <TextInput
-              aria-label={`expr-values-${index}`}
-              placeholder="comma-separated values"
-              value={(expr.values || []).join(',')}
-              isDisabled={expr.operator === 'Exists' || expr.operator === 'DoesNotExist'}
-              onChange={(_e, v) =>
-                updateExpression(index, {
-                  values: v
-                    .split(',')
-                    .map((s) => s.trim())
-                    .filter(Boolean),
-                })
+            <ClusterMultiSelect
+              id={`expr-values-${index}`}
+              values={expr.values || []}
+              options={labels.valuesByKey[expr.key] || []}
+              placeholder={
+                expr.operator === 'Exists' || expr.operator === 'DoesNotExist'
+                  ? 'N/A for this operator'
+                  : 'Select values'
               }
+              isDisabled={expr.operator === 'Exists' || expr.operator === 'DoesNotExist'}
+              onChange={(values) => updateExpression(index, { values })}
             />
             <Button
               variant="plain"

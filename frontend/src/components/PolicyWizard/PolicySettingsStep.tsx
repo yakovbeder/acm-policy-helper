@@ -10,6 +10,7 @@ import {
   TextInput,
 } from '@patternfly/react-core';
 import { ChipInput } from '../ChipInput';
+import { NamespaceSelect } from '../NamespaceSelect';
 import { SelectField } from '../SelectField';
 import type { PolicyFormState } from '../../types';
 
@@ -26,23 +27,22 @@ export function PolicySettingsStep({ form, onChange }: Props) {
           id="policy-name"
           value={form.policyName}
           onChange={(_e, v) => onChange({ policyName: v })}
-          placeholder="my-config-policy"
-          isRequired
-        />
-      </FormGroup>
-
-      <FormGroup label="Namespace" isRequired fieldId="namespace">
-        <TextInput
-          id="namespace"
-          value={form.namespace}
-          onChange={(_e, v) => onChange({ namespace: v })}
+          placeholder="Enter a policy name"
           isRequired
         />
         <FormHelperText>
           <HelperText>
-            <HelperTextItem>Hub cluster namespace where the Policy will be created.</HelperTextItem>
+            <HelperTextItem>Example: my-config-policy</HelperTextItem>
           </HelperText>
         </FormHelperText>
+      </FormGroup>
+
+      <FormGroup label="Namespace" isRequired fieldId="namespace">
+        <NamespaceSelect
+          id="namespace"
+          value={form.namespace}
+          onChange={(namespace) => onChange({ namespace })}
+        />
       </FormGroup>
 
       <FormGroup label="Remediation action" isRequired fieldId="remediation">

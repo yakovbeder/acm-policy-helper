@@ -3,7 +3,10 @@ import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express from 'express';
 import applyRouter from './routes/apply.js';
+import clusterLabelsRouter from './routes/clusterLabels.js';
+import clusterSetsRouter from './routes/clusterSets.js';
 import generateRouter from './routes/generate.js';
+import namespacesRouter from './routes/namespaces.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +27,9 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/generate', generateRouter);
 app.use('/api/apply', applyRouter);
+app.use('/api/namespaces', namespacesRouter);
+app.use('/api/cluster-sets', clusterSetsRouter);
+app.use('/api/cluster-labels', clusterLabelsRouter);
 
 const publicDir = process.env.PUBLIC_DIR || path.join(__dirname, '../public');
 app.use(express.static(publicDir));
