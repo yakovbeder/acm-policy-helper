@@ -12,7 +12,7 @@ const execFileAsync = promisify(execFile);
 const POLICY_GENERATOR_BIN =
   process.env.POLICY_GENERATOR_BIN || '/usr/local/bin/PolicyGenerator';
 
-function sanitizeFileName(name: string, index: number): string {
+export function sanitizeFileName(name: string, index: number): string {
   const base = name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/^\.+/, '') || `manifest-${index}`;
   return base.endsWith('.yaml') || base.endsWith('.yml') ? base : `${base}.yaml`;
 }
@@ -43,7 +43,7 @@ function normalizeExpression(expr: MatchExpression): Record<string, unknown> {
   return out;
 }
 
-function buildPolicyGeneratorDocument(req: GenerateRequest, manifestsDir: string): object {
+export function buildPolicyGeneratorDocument(req: GenerateRequest, manifestsDir: string): object {
   const labelSelector = buildLabelSelector(req);
   const placement: Record<string, unknown> = {
     name: `placement-${req.policyName}`,
@@ -112,7 +112,7 @@ function dumpMultiDoc(docs: unknown[]): string {
     .join('---\n');
 }
 
-function injectClusterSets(generatedYaml: string, req: GenerateRequest): string {
+export function injectClusterSets(generatedYaml: string, req: GenerateRequest): string {
   if (req.placement.mode !== 'clusterSets' || !req.placement.clusterSets?.length) {
     return generatedYaml;
   }

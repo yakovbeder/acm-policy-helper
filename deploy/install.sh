@@ -2,7 +2,7 @@
 set -euo pipefail
 
 NAMESPACE="${NAMESPACE:-acm-policy-helper}"
-IMAGE="${IMAGE:-quay.io/yakovbeder/acm-policy-helper:latest}"
+IMAGE="${IMAGE:-quay.io/rh-ee-ybeder/acm-policy-helper:latest}"
 
 echo "Creating namespace ${NAMESPACE}..."
 oc apply -f "$(dirname "$0")/namespace.yaml"

@@ -35,11 +35,9 @@ Requirements: Node.js 20+, optionally a local `PolicyGenerator` binary.
 # Install dependencies
 npm install
 
-# Optional: download PolicyGenerator for local generate testing
-curl -L -o /tmp/PolicyGenerator \
-  https://github.com/open-cluster-management-io/policy-generator-plugin/releases/download/v1.19.0/linux-amd64-PolicyGenerator
-chmod +x /tmp/PolicyGenerator
-export POLICY_GENERATOR_BIN=/tmp/PolicyGenerator
+# Download PolicyGenerator for generate testing / e2e
+npm run download:pg
+export POLICY_GENERATOR_BIN="$PWD/e2e/bin/PolicyGenerator"
 
 # Run API + UI
 npm run dev
@@ -48,16 +46,50 @@ npm run dev
 - UI: http://localhost:5173
 - API: http://localhost:8080
 
+### Tests
+
+```bash
+# Unit tests (backend + frontend)
+npm test
+
+# E2E (Playwright) — builds app, starts server, runs wizard flow
+npm run build
+npm run install:browsers -w e2e
+POLICY_GENERATOR_BIN="$PWD/e2e/bin/PolicyGenerator" npm run test:e2e
+```
+
+## CI / GitHub Actions
+
+Workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
+
+On every PR/push to `main`:
+
+1. Backend unit tests + coverage
+2. Frontend unit tests + coverage
+3. E2E Playwright tests (with PolicyGenerator binary)
+4. On push to `main` only: build and push image to `quay.io/rh-ee-ybeder/acm-policy-helper`
+
+Required GitHub secrets for image push:
+
+- `QUAY_USERNAME`
+- `QUAY_PASSWORD`
+
 ## Build container image
 
 ```bash
-podman build -t quay.io/<org>/acm-policy-helper:latest .
-podman push quay.io/<org>/acm-policy-helper:latest
+podman build -t quay.io/rh-ee-ybeder/acm-policy-helper:latest .
+podman push quay.io/rh-ee-ybeder/acm-policy-helper:latest
 ```
 
 The image is based on `registry.access.redhat.com/ubi9/nodejs-20` and embeds PolicyGenerator v1.19.0.
 
 ## Deploy on OpenShift
+
+```bash
+IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:latest ./deploy/install.sh
+```
+
+Or manually:
 
 1. Create the namespace and proxy cookie secret:
 
@@ -71,21 +103,13 @@ oc create secret generic acm-policy-helper-proxy \
   --dry-run=client -o yaml | oc apply -f -
 ```
 
-2. Set your image in `deploy/kustomization.yaml` (or edit `deploy/deployment.yaml`).
-
-3. Apply manifests:
+2. Apply manifests:
 
 ```bash
 oc apply -k deploy/
 ```
 
-4. Wait for the serving cert secret (`acm-policy-helper-tls`) to be created by OpenShift, then check the Route:
-
-```bash
-oc get route acm-policy-helper -n acm-policy-helper
-```
-
-5. Open the Route URL. You should be redirected to the **OpenShift OAuth login** page. After authentication, the ACM Policy Helper UI loads.
+3. Open the Route URL. You should be redirected to the **OpenShift OAuth login** page. After authentication, the ACM Policy Helper UI loads.
 
 ### OAuth proxy image
 

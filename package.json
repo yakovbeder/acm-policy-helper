@@ -7,11 +7,17 @@
     "dev": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
     "build": "npm run build -w frontend && npm run build -w backend && rm -rf backend/public && mkdir -p backend/public && cp -r frontend/dist/* backend/public/",
     "start": "npm run start -w backend",
-    "lint": "npm run lint -w frontend && npm run lint -w backend"
+    "lint": "npm run lint -w frontend && npm run lint -w backend",
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "test:unit": "npm run test",
+    "test:e2e": "npm run test -w e2e",
+    "test:all": "npm run test && npm run test:e2e",
+    "download:pg": "bash scripts/download-policy-generator.sh e2e/bin"
   },
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "e2e"
   ],
   "devDependencies": {
     "concurrently": "^9.1.2"

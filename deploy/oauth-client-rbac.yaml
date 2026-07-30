@@ -1,0 +1,29 @@
+# Allows authenticated OpenShift users to pass oauth-proxy --openshift-sar checks
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: acm-policy-helper-oauth-sar
+  namespace: acm-policy-helper
+  labels:
+    app.kubernetes.io/name: acm-policy-helper
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    resourceNames: ["acm-policy-helper"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: acm-policy-helper-oauth-sar
+  namespace: acm-policy-helper
+  labels:
+    app.kubernetes.io/name: acm-policy-helper
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: acm-policy-helper-oauth-sar
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: system:authenticated
