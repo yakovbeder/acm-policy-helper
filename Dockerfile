@@ -1,5 +1,5 @@
 # Stage 1: Build frontend
-FROM registry.access.redhat.com/ubi9/nodejs-20:latest AS frontend-build
+FROM registry.access.redhat.com/ubi9/nodejs-22:latest AS frontend-build
 WORKDIR /opt/app-root/src/frontend
 USER 0
 COPY frontend/package.json ./
@@ -9,7 +9,7 @@ RUN npm run build \
   && chown -R 1001:0 /opt/app-root/src/frontend/dist
 
 # Stage 2: Build backend
-FROM registry.access.redhat.com/ubi9/nodejs-20:latest AS backend-build
+FROM registry.access.redhat.com/ubi9/nodejs-22:latest AS backend-build
 WORKDIR /opt/app-root/src/backend
 USER 0
 COPY backend/package.json ./
@@ -20,7 +20,7 @@ RUN npm run build \
   && chown -R 1001:0 /opt/app-root/src/backend/node_modules
 
 # Stage 3: Runtime
-FROM registry.access.redhat.com/ubi9/nodejs-20-minimal:latest
+FROM registry.access.redhat.com/ubi9/nodejs-22-minimal:latest
 WORKDIR /opt/app-root/src
 
 USER 0

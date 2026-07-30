@@ -102,7 +102,7 @@ podman push quay.io/<org>/acm-policy-helper:latest
 IMAGE=quay.io/<org>/acm-policy-helper:latest ./deploy/install.sh
 ```
 
-The image is based on `registry.access.redhat.com/ubi9/nodejs-20` and embeds PolicyGenerator v1.19.0.
+The image is based on `registry.access.redhat.com/ubi9/nodejs-22` and embeds PolicyGenerator v1.19.0.
 
 CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs unit + e2e tests on push/PR. Build and push the container image locally (or from your registry pipeline), not from GitHub Actions.
 
@@ -110,7 +110,7 @@ CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs unit + e2e tests
 
 ## Alternative: local development
 
-Requirements: Node.js 20+ (CI uses 22), optionally a local `PolicyGenerator` binary.
+Requirements: Node.js 22+, optionally a local `PolicyGenerator` binary.
 
 ```bash
 npm install
