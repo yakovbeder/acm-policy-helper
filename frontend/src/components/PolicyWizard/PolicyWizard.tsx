@@ -81,17 +81,21 @@ export function PolicyWizard({ isDark }: Props) {
   const patchForm = (patch: Partial<PolicyFormState>) => {
     setForm((prev) => ({ ...prev, ...patch }));
     setStepError(null);
+    setGenerateError(null);
   };
 
   const runGenerate = async (): Promise<boolean> => {
     setIsGenerating(true);
     setGenerateError(null);
+    setStepError(null);
     try {
       const yaml = await generatePolicy(form);
       setGeneratedYaml(yaml);
       return true;
     } catch (err: unknown) {
-      setGenerateError(err instanceof Error ? err.message : String(err));
+      const message = err instanceof Error ? err.message : String(err);
+      setGenerateError(message);
+      setStepError(`Policy generation failed: ${message}`);
       setGeneratedYaml('');
       return false;
     } finally {
@@ -161,12 +165,21 @@ export function PolicyWizard({ isDark }: Props) {
                   setStepError('Add at least one YAML manifest.');
                   return false;
                 }
-                setStepError(null);
                 return runGenerate();
               }}
             />
           }
         >
+          {generateError && (
+            <Alert
+              variant="danger"
+              title="Could not generate policy"
+              isInline
+              style={{ marginBottom: '1rem' }}
+            >
+              {generateError}
+            </Alert>
+          )}
           <ManifestsStep form={form} onChange={patchForm} isDark={isDark} />
         </WizardStep>
 

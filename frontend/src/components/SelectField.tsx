@@ -1,4 +1,5 @@
-import { FormSelect, FormSelectOption } from '@patternfly/react-core';
+import { useMemo } from 'react';
+import { SimpleSelect, type SimpleSelectOption } from '@patternfly/react-templates';
 
 interface SelectFieldProps {
   id: string;
@@ -6,6 +7,7 @@ interface SelectFieldProps {
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
   'aria-label'?: string;
+  placeholder?: string;
 }
 
 export function SelectField({
@@ -14,17 +16,34 @@ export function SelectField({
   onChange,
   options,
   'aria-label': ariaLabel,
+  placeholder = 'Select a value',
 }: SelectFieldProps) {
+  const initialOptions = useMemo(
+    (): SimpleSelectOption[] =>
+      options.map((opt) => ({
+        value: opt.value,
+        content: opt.label,
+        selected: opt.value === value,
+      })),
+    [options, value]
+  );
+
   return (
-    <FormSelect
+    <SimpleSelect
       id={id}
-      value={value}
-      onChange={(_e, v) => onChange(v)}
-      aria-label={ariaLabel || id}
-    >
-      {options.map((opt) => (
-        <FormSelectOption key={opt.value} value={opt.value} label={opt.label} />
-      ))}
-    </FormSelect>
+      initialOptions={initialOptions}
+      placeholder={placeholder}
+      onSelect={(_e, selection) => {
+        if (selection !== undefined && selection !== null) {
+          onChange(String(selection));
+        }
+      }}
+      toggleWidth="100%"
+      toggleProps={{
+        id,
+        'aria-label': ariaLabel || id,
+        isFullWidth: true,
+      }}
+    />
   );
 }

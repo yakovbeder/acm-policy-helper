@@ -2,6 +2,8 @@ import {
   Brand,
   Content,
   ContentVariants,
+  Flex,
+  FlexItem,
   Masthead,
   MastheadBrand,
   MastheadContent,
@@ -27,29 +29,42 @@ export default function App() {
     <Masthead>
       <MastheadMain>
         <MastheadBrand>
-          <Brand
-            src={isDark ? redhatLogoDark : redhatLogo}
-            alt="Red Hat"
-            heights={{ default: '36px' }}
-          />
+          <Flex
+            alignItems={{ default: 'alignItemsCenter' }}
+            spaceItems={{ default: 'spaceItemsMd' }}
+            flexWrap={{ default: 'nowrap' }}
+          >
+            <FlexItem>
+              <Brand
+                src={isDark ? redhatLogoDark : redhatLogo}
+                alt="Red Hat"
+                heights={{ default: '36px' }}
+              />
+            </FlexItem>
+            <FlexItem>
+              <Title
+                headingLevel="h1"
+                size="2xl"
+                style={{ lineHeight: 1.15, margin: 0 }}
+              >
+                ACM Policy Helper
+              </Title>
+              <Content
+                component={ContentVariants.small}
+                style={{
+                  color: 'var(--pf-t--global--text--color--subtle)',
+                  marginTop: 0,
+                }}
+              >
+                Generate ACM Configuration Policies from YAML
+              </Content>
+            </FlexItem>
+          </Flex>
         </MastheadBrand>
       </MastheadMain>
       <MastheadContent>
         <Toolbar id="toolbar" isFullHeight isStatic style={{ width: '100%' }}>
           <ToolbarContent>
-            <ToolbarItem>
-              <div>
-                <Title headingLevel="h1" size="lg">
-                  ACM Policy Helper
-                </Title>
-                <Content
-                  component={ContentVariants.small}
-                  style={{ color: 'var(--pf-t--global--text--color--subtle)' }}
-                >
-                  Generate ACM Configuration Policies from YAML
-                </Content>
-              </div>
-            </ToolbarItem>
             <ToolbarGroup align={{ default: 'alignEnd' }}>
               <ToolbarItem>
                 <ThemeToggle theme={theme} onToggle={toggleTheme} />
