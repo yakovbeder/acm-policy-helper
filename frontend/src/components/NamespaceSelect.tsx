@@ -87,7 +87,7 @@ export function NamespaceSelect({ id, value, onChange }: Props) {
           <HelperTextItem>
             {error
               ? `Could not list cluster namespaces (${error}). Type a namespace name.`
-              : 'Hub cluster namespace where the Policy will be created. Choose from the cluster or type a new name.'}
+              : 'The namespace on the hub cluster where the policy resources will be created.'}
           </HelperTextItem>
         </HelperText>
       </FormHelperText>

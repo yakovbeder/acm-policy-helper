@@ -17,6 +17,18 @@ export function sanitizeFileName(name: string, index: number): string {
   return base.endsWith('.yaml') || base.endsWith('.yml') ? base : `${base}.yaml`;
 }
 
+/** Derive a ConfigurationPolicy name from an optional override or filename stem. */
+export function configPolicyNameFromManifest(
+  manifest: { name?: string; configPolicyName?: string },
+  index: number
+): string {
+  if (manifest.configPolicyName?.trim()) {
+    return manifest.configPolicyName.trim();
+  }
+  const fileName = sanitizeFileName(manifest.name || `manifest-${index}`, index);
+  return fileName.replace(/\.(ya?ml)$/i, '') || `manifest-${index}`;
+}
+
 function buildLabelSelector(req: GenerateRequest): Record<string, unknown> | undefined {
   if (req.placement.mode === 'labelSelector') {
     const ls = req.placement.labelSelector || {};
@@ -63,6 +75,8 @@ export function buildPolicyGeneratorDocument(req: GenerateRequest, manifestsDir:
     }
   }
 
+  const consolidateManifests = req.consolidateManifests !== false;
+
   const policyDefaults: Record<string, unknown> = {
     namespace: req.namespace,
     remediationAction: req.remediationAction,
@@ -73,14 +87,50 @@ export function buildPolicyGeneratorDocument(req: GenerateRequest, manifestsDir:
     standards: req.standards?.length ? req.standards : ['NIST SP 800-53'],
     categories: req.categories?.length ? req.categories : ['CM Configuration Management'],
     controls: req.controls?.length ? req.controls : ['CM-2 Baseline Configuration'],
-    consolidateManifests: true,
+    consolidateManifests,
     generatePolicyPlacement: true,
     placement,
   };
 
+  if (!consolidateManifests) {
+    // Keep ConfigurationPolicy template order aligned with the manifests list.
+    policyDefaults.orderManifests = true;
+  }
+
   if (req.description) {
     policyDefaults.description = req.description;
   }
+
+  const manifests = consolidateManifests
+    ? (() => {
+        // Directory path wraps all files; optional per-manifest complianceType on first entry is unused by PG for dirs.
+        // When consolidated, emit one path entry; per-file compliance overrides need per-file paths.
+        const hasPerManifestCompliance = req.manifests.some((m) => m.complianceType);
+        if (!hasPerManifestCompliance) {
+          return [{ path: manifestsDir }];
+        }
+        return req.manifests.map((manifest, index) => {
+          const fileName = sanitizeFileName(manifest.name || `manifest-${index}`, index);
+          const entry: Record<string, unknown> = {
+            path: path.posix.join(manifestsDir, fileName),
+          };
+          if (manifest.complianceType) {
+            entry.complianceType = manifest.complianceType;
+          }
+          return entry;
+        });
+      })()
+    : req.manifests.map((manifest, index) => {
+        const fileName = sanitizeFileName(manifest.name || `manifest-${index}`, index);
+        const entry: Record<string, unknown> = {
+          path: path.posix.join(manifestsDir, fileName),
+          name: configPolicyNameFromManifest(manifest, index),
+        };
+        if (manifest.complianceType) {
+          entry.complianceType = manifest.complianceType;
+        }
+        return entry;
+      });
 
   return {
     apiVersion: 'policy.open-cluster-management.io/v1',
@@ -95,11 +145,7 @@ export function buildPolicyGeneratorDocument(req: GenerateRequest, manifestsDir:
     policies: [
       {
         name: req.policyName,
-        manifests: [
-          {
-            path: manifestsDir,
-          },
-        ],
+        manifests,
       },
     ],
   };

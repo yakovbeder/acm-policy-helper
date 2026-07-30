@@ -16,11 +16,17 @@ export interface PlacementConfig {
   matchExpressions: MatchExpression[];
 }
 
+export type ComplianceType = 'musthave' | 'mustonlyhave' | 'mustnothave';
+
 export interface ManifestInput {
   id: string;
   name: string;
   content: string;
   lintErrors?: string[];
+  /** ConfigurationPolicy name when consolidateManifests is false */
+  configPolicyName?: string;
+  /** Per-manifest compliance override */
+  complianceType?: ComplianceType;
 }
 
 export interface PolicyFormState {
@@ -28,13 +34,15 @@ export interface PolicyFormState {
   namespace: string;
   remediationAction: 'inform' | 'enforce';
   severity: 'low' | 'medium' | 'high' | 'critical';
-  complianceType: 'musthave' | 'mustonlyhave' | 'mustnothave';
+  complianceType: ComplianceType;
   description: string;
   disabled: boolean;
   pruneObjectBehavior: 'None' | 'DeleteAll' | 'DeleteIfCreated';
   standards: string[];
   categories: string[];
   controls: string[];
+  /** When false, one ConfigurationPolicy is generated per manifest */
+  consolidateManifests: boolean;
   placement: PlacementConfig;
   manifests: ManifestInput[];
 }
@@ -59,6 +67,7 @@ export const defaultFormState = (): PolicyFormState => ({
   standards: ['NIST SP 800-53'],
   categories: ['CM Configuration Management'],
   controls: ['CM-2 Baseline Configuration'],
+  consolidateManifests: true,
   placement: {
     mode: 'labelSelector',
     labelSelector: {

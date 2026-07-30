@@ -238,6 +238,114 @@ export async function listManagedClusterLabels(): Promise<ClusterLabelCatalog> {
   };
 }
 
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}
+
+async function getNamespacedObject(
+  customApi: k8s.CustomObjectsApi,
+  group: string,
+  version: string,
+  plural: string,
+  namespace: string,
+  name: string
+): Promise<Record<string, unknown> | null> {
+  try {
+    return (await customApi.getNamespacedCustomObject({
+      group,
+      version,
+      namespace,
+      plural,
+      name,
+    })) as Record<string, unknown>;
+  } catch (err: unknown) {
+    if (getHttpStatus(err) === 404) {
+      return null;
+    }
+    throw err;
+  }
+}
+
+export async function getPolicy(
+  namespace: string,
+  name: string
+): Promise<Record<string, unknown>> {
+  if (isClusterCatalogDisabled()) {
+    throw new NotFoundError(`Policy "${name}" not found in namespace "${namespace}"`);
+  }
+  const kc = getKubeConfig();
+  const customApi = kc.makeApiClient(k8s.CustomObjectsApi);
+  const policy = await getNamespacedObject(
+    customApi,
+    'policy.open-cluster-management.io',
+    'v1',
+    'policies',
+    namespace,
+    name
+  );
+  if (!policy) {
+    throw new NotFoundError(`Policy "${name}" not found in namespace "${namespace}"`);
+  }
+  return policy;
+}
+
+export interface PolicyBundle {
+  policy: Record<string, unknown>;
+  placement?: Record<string, unknown>;
+  placementBinding?: Record<string, unknown>;
+}
+
+export async function getPolicyBundle(
+  namespace: string,
+  name: string
+): Promise<PolicyBundle> {
+  if (isClusterCatalogDisabled()) {
+    throw new NotFoundError(`Policy "${name}" not found in namespace "${namespace}"`);
+  }
+  const kc = getKubeConfig();
+  const customApi = kc.makeApiClient(k8s.CustomObjectsApi);
+
+  const policy = await getNamespacedObject(
+    customApi,
+    'policy.open-cluster-management.io',
+    'v1',
+    'policies',
+    namespace,
+    name
+  );
+  if (!policy) {
+    throw new NotFoundError(`Policy "${name}" not found in namespace "${namespace}"`);
+  }
+
+  const [placement, placementBinding] = await Promise.all([
+    getNamespacedObject(
+      customApi,
+      'cluster.open-cluster-management.io',
+      'v1beta1',
+      'placements',
+      namespace,
+      `placement-${name}`
+    ),
+    getNamespacedObject(
+      customApi,
+      'policy.open-cluster-management.io',
+      'v1',
+      'placementbindings',
+      namespace,
+      `binding-${name}`
+    ),
+  ]);
+
+  return {
+    policy,
+    ...(placement ? { placement } : {}),
+    ...(placementBinding ? { placementBinding } : {}),
+  };
+}
+
 export async function applyYaml(yamlContent: string): Promise<ApplyResult[]> {
   const docs = (yaml.loadAll(yamlContent) as (KubeObject | null)[]).filter(
     (d): d is KubeObject => Boolean(d && typeof d === 'object' && d.kind)

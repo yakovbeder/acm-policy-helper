@@ -23,6 +23,7 @@ interface Props {
   isDark: boolean;
   isGenerating: boolean;
   generateError: string | null;
+  editMode?: 'create' | 'edit';
 }
 
 export function ReviewStep({
@@ -31,6 +32,7 @@ export function ReviewStep({
   isDark,
   isGenerating,
   generateError,
+  editMode = 'create',
 }: Props) {
   const [copied, setCopied] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -115,7 +117,7 @@ export function ReviewStep({
             isLoading={applying}
             isDisabled={applying}
           >
-            Apply to cluster
+            {editMode === 'edit' ? 'Update on cluster' : 'Apply to cluster'}
           </Button>
         </FlexItem>
       </Flex>

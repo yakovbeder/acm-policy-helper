@@ -16,9 +16,15 @@ export interface PlacementConfig {
   matchExpressions?: MatchExpression[];
 }
 
+export type ComplianceType = 'musthave' | 'mustonlyhave' | 'mustnothave';
+
 export interface ManifestInput {
   name: string;
   content: string;
+  /** ConfigurationPolicy name when consolidateManifests is false */
+  configPolicyName?: string;
+  /** Per-manifest compliance override */
+  complianceType?: ComplianceType;
 }
 
 export interface GenerateRequest {
@@ -26,13 +32,15 @@ export interface GenerateRequest {
   namespace: string;
   remediationAction: 'inform' | 'enforce';
   severity: 'low' | 'medium' | 'high' | 'critical';
-  complianceType: 'musthave' | 'mustonlyhave' | 'mustnothave';
+  complianceType: ComplianceType;
   description?: string;
   disabled?: boolean;
   pruneObjectBehavior?: 'None' | 'DeleteAll' | 'DeleteIfCreated';
   standards?: string[];
   categories?: string[];
   controls?: string[];
+  /** When false, one ConfigurationPolicy is generated per manifest */
+  consolidateManifests?: boolean;
   placement: PlacementConfig;
   manifests: ManifestInput[];
 }

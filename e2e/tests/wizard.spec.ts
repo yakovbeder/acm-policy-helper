@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const fixtureYaml = path.join(__dirname, 'fixtures', 'configmap.yaml');
+const secretFixtureYaml = path.join(__dirname, 'fixtures', 'secret.yaml');
 
 /** Fill a PF6 TypeaheadSelect (role=combobox) that may already have a value. */
 async function fillCreatableTypeahead(page: Page, combobox: Locator, value: string) {
@@ -70,6 +71,42 @@ test.describe('ACM Policy Helper wizard', () => {
     await expect(generateBtn).toBeEnabled({ timeout: 10_000 });
     await generateBtn.click();
 
+    await expect(page.getByRole('button', { name: 'Download YAML' })).toBeVisible({
+      timeout: 60_000,
+    });
+    await expect(page.getByRole('button', { name: 'Apply to cluster' })).toBeVisible();
+  });
+
+  test('generates separate ConfigurationPolicies per manifest', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto('/');
+
+    await page.locator('#policy-name').fill('e2e-multi-cp-policy');
+    await expect(page.getByText('Loading namespaces…')).toBeHidden({ timeout: 15_000 });
+
+    // Enable separate ConfigurationPolicy mode (force avoids PF switch toggle intercept)
+    await page.locator('#consolidate').check({ force: true });
+    await expect(page.locator('#consolidate')).toBeChecked();
+
+    await fillCreatableTypeahead(page, page.getByRole('combobox').first(), 'policies');
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    await expect(page.getByText(/Loading ManagedClusterSets/)).toBeHidden({ timeout: 15_000 });
+    await page.getByRole('button', { name: 'Next' }).click();
+
+    await page.getByRole('tab', { name: 'Upload file' }).click();
+    const uploadPanel = page.getByRole('tabpanel', { name: 'Upload file' });
+    const fileInput = uploadPanel.locator('input[type="file"]');
+    await fileInput.setInputFiles(fixtureYaml);
+    await expect(page.getByText(/Manifests \(1\)/)).toBeVisible({ timeout: 15_000 });
+    await uploadPanel.getByRole('button', { name: 'Clear' }).click();
+    await fileInput.setInputFiles(secretFixtureYaml);
+    await expect(page.getByText(/Manifests \(2\)/)).toBeVisible({ timeout: 15_000 });
+
+    await expect(page.getByLabel('ConfigurationPolicy name').first()).toBeVisible();
+
+    await page.getByRole('button', { name: 'Generate' }).click();
     await expect(page.getByRole('button', { name: 'Download YAML' })).toBeVisible({
       timeout: 60_000,
     });

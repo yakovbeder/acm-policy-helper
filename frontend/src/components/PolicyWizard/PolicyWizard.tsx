@@ -1,13 +1,18 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
   Button,
+  Modal,
+  ModalBody,
+  ModalFooter,
+  ModalHeader,
   Wizard,
   WizardFooterWrapper,
   WizardStep,
   useWizardContext,
 } from '@patternfly/react-core';
-import { generatePolicy } from '../../services/api';
+import { fetchPolicy, fetchPolicyBundle, generatePolicy } from '../../services/api';
+import { hydrateFormFromPolicyBundle } from '../../services/policyHydrate';
 import { defaultFormState, type PolicyFormState } from '../../types';
 import { ManifestsStep } from './ManifestsStep';
 import { PlacementStep } from './PlacementStep';
@@ -37,11 +42,7 @@ function StepFooter({
 
   return (
     <WizardFooterWrapper>
-      <Button
-        variant="secondary"
-        onClick={goToPrevStep}
-        isDisabled={isFirst || busy}
-      >
+      <Button variant="secondary" onClick={goToPrevStep} isDisabled={isFirst || busy}>
         Back
       </Button>
       {!hideNext && (
@@ -71,17 +72,29 @@ function StepFooter({
   );
 }
 
+type EditMode = 'create' | 'edit';
+
 export function PolicyWizard({ isDark }: Props) {
   const [form, setForm] = useState<PolicyFormState>(defaultFormState);
   const [generatedYaml, setGeneratedYaml] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState<EditMode>('create');
+  const [hydrateWarnings, setHydrateWarnings] = useState<string[]>([]);
+  const [existingModalOpen, setExistingModalOpen] = useState(false);
+  const [fetchingExisting, setFetchingExisting] = useState(false);
+  const existingResolveRef = useRef<((ok: boolean) => void) | null>(null);
 
   const patchForm = (patch: Partial<PolicyFormState>) => {
     setForm((prev) => ({ ...prev, ...patch }));
     setStepError(null);
     setGenerateError(null);
+    // Changing name/namespace leaves edit mode so existence can be re-checked
+    if ('policyName' in patch || 'namespace' in patch) {
+      setEditMode('create');
+      setHydrateWarnings([]);
+    }
   };
 
   const runGenerate = async (): Promise<boolean> => {
@@ -103,11 +116,119 @@ export function PolicyWizard({ isDark }: Props) {
     }
   };
 
+  const finishExistingModal = (proceed: boolean) => {
+    setExistingModalOpen(false);
+    const resolve = existingResolveRef.current;
+    existingResolveRef.current = null;
+    resolve?.(proceed);
+  };
+
+  const checkExistingPolicy = async (): Promise<boolean> => {
+    if (!form.policyName.trim() || !form.namespace.trim()) {
+      setStepError('Policy name and namespace are required.');
+      return false;
+    }
+    setStepError(null);
+
+    if (editMode === 'edit') {
+      return true;
+    }
+
+    try {
+      const existing = await fetchPolicy(form.namespace.trim(), form.policyName.trim());
+      if (!existing) {
+        setEditMode('create');
+        return true;
+      }
+      return await new Promise<boolean>((resolve) => {
+        existingResolveRef.current = resolve;
+        setExistingModalOpen(true);
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn('Policy existence check failed:', message);
+      return true;
+    }
+  };
+
+  const onContinueAsNew = () => {
+    setEditMode('create');
+    setHydrateWarnings([]);
+    finishExistingModal(true);
+  };
+
+  const onFetchAndEdit = async () => {
+    setFetchingExisting(true);
+    try {
+      const bundle = await fetchPolicyBundle(form.namespace.trim(), form.policyName.trim());
+      const hydrated = hydrateFormFromPolicyBundle(bundle);
+      setForm(hydrated.form);
+      setHydrateWarnings(hydrated.warnings);
+      setEditMode('edit');
+      setGeneratedYaml('');
+      finishExistingModal(true);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setStepError(`Could not fetch policy: ${message}`);
+      finishExistingModal(false);
+    } finally {
+      setFetchingExisting(false);
+    }
+  };
+
   return (
     <>
       {stepError && (
         <Alert variant="danger" title={stepError} isInline style={{ marginBottom: '1rem' }} />
       )}
+      {editMode === 'edit' && (
+        <Alert
+          variant="info"
+          title={`Editing existing policy ${form.policyName} in ${form.namespace}`}
+          isInline
+          style={{ marginBottom: '1rem' }}
+        >
+          Add or change manifests, then regenerate and update on the cluster.
+          {hydrateWarnings.length > 0 && (
+            <ul style={{ marginTop: '0.5rem' }}>
+              {hydrateWarnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          )}
+        </Alert>
+      )}
+
+      <Modal
+        isOpen={existingModalOpen}
+        onClose={() => finishExistingModal(false)}
+        variant="medium"
+        aria-labelledby="policy-exists-title"
+        aria-describedby="policy-exists-body"
+      >
+        <ModalHeader title="Policy exists" labelId="policy-exists-title" />
+        <ModalBody id="policy-exists-body">
+          Policy <strong>{form.policyName}</strong> already exists in namespace{' '}
+          <strong>{form.namespace}</strong>. Fetch it to edit and add manifests, or continue and
+          overwrite on apply.
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="primary" onClick={onFetchAndEdit} isLoading={fetchingExisting}>
+            Fetch and edit
+          </Button>
+          <Button variant="secondary" onClick={onContinueAsNew} isDisabled={fetchingExisting}>
+            Continue as new
+          </Button>
+          <Button
+            variant="link"
+            onClick={() => finishExistingModal(false)}
+            isDisabled={fetchingExisting}
+          >
+            Cancel
+          </Button>
+        </ModalFooter>
+      </Modal>
+
       <Wizard isVisitRequired height="100%">
         <WizardStep
           id="settings"
@@ -115,14 +236,7 @@ export function PolicyWizard({ isDark }: Props) {
           footer={
             <StepFooter
               isNextDisabled={!form.policyName.trim() || !form.namespace.trim()}
-              onBeforeNext={() => {
-                if (!form.policyName.trim() || !form.namespace.trim()) {
-                  setStepError('Policy name and namespace are required.');
-                  return false;
-                }
-                setStepError(null);
-                return true;
-              }}
+              onBeforeNext={checkExistingPolicy}
             />
           }
         >
@@ -202,6 +316,7 @@ export function PolicyWizard({ isDark }: Props) {
             isDark={isDark}
             isGenerating={isGenerating}
             generateError={generateError}
+            editMode={editMode}
           />
         </WizardStep>
       </Wizard>

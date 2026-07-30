@@ -5,17 +5,26 @@ import {
   FileUpload,
   Form,
   FormGroup,
+  FormHelperText,
+  HelperText,
+  HelperTextItem,
   List,
   ListItem,
   Tab,
   Tabs,
   TabTitleText,
+  TextInput,
   Title,
 } from '@patternfly/react-core';
 import TrashIcon from '@patternfly/react-icons/dist/esm/icons/trash-icon';
+import { SelectField } from '../SelectField';
 import { YamlEditor } from '../YamlEditor';
 import { formatLintErrors, lintYaml, splitMultiDocYaml } from '../../services/yamlLinter';
-import type { ManifestInput, PolicyFormState } from '../../types';
+import type { ComplianceType, ManifestInput, PolicyFormState } from '../../types';
+
+function stemFromFileName(name: string): string {
+  return name.replace(/\.(ya?ml)$/i, '') || name;
+}
 
 interface Props {
   form: PolicyFormState;
@@ -45,8 +54,16 @@ export function ManifestsStep({ form, onChange, isDark }: Props) {
         name,
         content,
         lintErrors: errors,
+        configPolicyName: stemFromFileName(name),
+        complianceType: form.complianceType,
       },
     ]);
+  };
+
+  const updateManifest = (id: string, patch: Partial<ManifestInput>) => {
+    onChange({
+      manifests: form.manifests.map((m) => (m.id === id ? { ...m, ...patch } : m)),
+    });
   };
 
   const handleAddPaste = () => {
@@ -69,6 +86,8 @@ export function ManifestsStep({ form, onChange, isDark }: Props) {
           name: p.name,
           content: p.content,
           lintErrors: formatLintErrors(lintYaml(p.content)),
+          configPolicyName: stemFromFileName(p.name),
+          complianceType: form.complianceType,
         })),
       ]);
     } else {
@@ -93,21 +112,13 @@ export function ManifestsStep({ form, onChange, isDark }: Props) {
           name: p.name,
           content: p.content,
           lintErrors: formatLintErrors(lintYaml(p.content)),
+          configPolicyName: stemFromFileName(p.name),
+          complianceType: form.complianceType,
         })),
       ]);
     } else {
       addManifest(uploadFilename || `upload-${form.manifests.length + 1}.yaml`, data);
     }
-  };
-
-  const updateManifestContent = (id: string, content: string) => {
-    onChange({
-      manifests: form.manifests.map((m) =>
-        m.id === id
-          ? { ...m, content, lintErrors: formatLintErrors(lintYaml(content)) }
-          : m
-      ),
-    });
   };
 
   return (
@@ -220,9 +231,63 @@ export function ManifestsStep({ form, onChange, isDark }: Props) {
               }
             />
           </div>
+          {!form.consolidateManifests && (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '0.75rem',
+                marginBottom: '0.75rem',
+              }}
+            >
+              <FormGroup label="ConfigurationPolicy name" fieldId={`cp-name-${manifest.id}`}>
+                <TextInput
+                  id={`cp-name-${manifest.id}`}
+                  value={manifest.configPolicyName || stemFromFileName(manifest.name)}
+                  onChange={(_e, v) => updateManifest(manifest.id, { configPolicyName: v })}
+                />
+                <FormHelperText>
+                  <HelperText>
+                    <HelperTextItem>
+                      Name needs to be unique to the namespace on each of the managed clusters.
+                    </HelperTextItem>
+                  </HelperText>
+                </FormHelperText>
+              </FormGroup>
+              <FormGroup label="Compliance type" fieldId={`cp-compliance-${manifest.id}`}>
+                <SelectField
+                  id={`cp-compliance-${manifest.id}`}
+                  value={manifest.complianceType || form.complianceType}
+                  onChange={(v) =>
+                    updateManifest(manifest.id, { complianceType: v as ComplianceType })
+                  }
+                  options={[
+                    { value: 'musthave', label: 'musthave' },
+                    { value: 'mustonlyhave', label: 'mustonlyhave' },
+                    { value: 'mustnothave', label: 'mustnothave' },
+                  ]}
+                />
+              </FormGroup>
+            </div>
+          )}
+          {form.consolidateManifests && (
+            <FormHelperText>
+              <HelperText>
+                <HelperTextItem>
+                  Consolidated into one ConfigurationPolicy. Enable separate mode in Policy
+                  settings to name each template.
+                </HelperTextItem>
+              </HelperText>
+            </FormHelperText>
+          )}
           <YamlEditor
             value={manifest.content}
-            onChange={(content) => updateManifestContent(manifest.id, content)}
+            onChange={(content) =>
+              updateManifest(manifest.id, {
+                content,
+                lintErrors: formatLintErrors(lintYaml(content)),
+              })
+            }
             isDark={isDark}
             height="220px"
           />

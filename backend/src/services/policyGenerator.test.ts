@@ -75,6 +75,51 @@ describe('buildPolicyGeneratorDocument', () => {
       matchExpressions: [{ key: 'vendor', operator: 'In', values: ['OpenShift'] }],
     });
   });
+
+  it('emits per-manifest entries when consolidateManifests is false', () => {
+    const req = baseRequest();
+    req.consolidateManifests = false;
+    req.manifests = [
+      {
+        name: 'binding.yaml',
+        content: 'kind: ClusterRoleBinding\n',
+        configPolicyName: 'policy-oauth-binding',
+        complianceType: 'musthave',
+      },
+      {
+        name: 'secret.yaml',
+        content: 'kind: Secret\n',
+        configPolicyName: 'policy-oauth-secret',
+        complianceType: 'mustonlyhave',
+      },
+    ];
+    const doc = buildPolicyGeneratorDocument(req, 'manifests') as Record<string, unknown>;
+    const defaults = doc.policyDefaults as Record<string, unknown>;
+    expect(defaults.consolidateManifests).toBe(false);
+    expect(defaults.orderManifests).toBe(true);
+    const policies = doc.policies as { manifests: Record<string, unknown>[] }[];
+    expect(policies[0].manifests).toEqual([
+      {
+        path: 'manifests/binding.yaml',
+        name: 'policy-oauth-binding',
+        complianceType: 'musthave',
+      },
+      {
+        path: 'manifests/secret.yaml',
+        name: 'policy-oauth-secret',
+        complianceType: 'mustonlyhave',
+      },
+    ]);
+  });
+
+  it('uses filename stem as ConfigurationPolicy name when configPolicyName is omitted', () => {
+    const req = baseRequest();
+    req.consolidateManifests = false;
+    req.manifests = [{ name: 'my-configmap.yaml', content: 'kind: ConfigMap\n' }];
+    const doc = buildPolicyGeneratorDocument(req, 'manifests') as Record<string, unknown>;
+    const policies = doc.policies as { manifests: { name: string }[] }[];
+    expect(policies[0].manifests[0].name).toBe('my-configmap');
+  });
 });
 
 describe('injectClusterSets', () => {

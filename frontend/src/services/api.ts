@@ -13,8 +13,14 @@ export async function generatePolicy(form: PolicyFormState): Promise<string> {
     standards: form.standards,
     categories: form.categories,
     controls: form.controls,
+    consolidateManifests: form.consolidateManifests,
     placement: form.placement,
-    manifests: form.manifests.map(({ name, content }) => ({ name, content })),
+    manifests: form.manifests.map(({ name, content, configPolicyName, complianceType }) => ({
+      name,
+      content,
+      configPolicyName,
+      complianceType,
+    })),
   };
 
   const res = await fetch('/api/generate', {
@@ -77,4 +83,39 @@ export async function fetchClusterLabels(): Promise<ClusterLabelCatalog> {
     keys: (data.keys as string[]) || [],
     valuesByKey: (data.valuesByKey as Record<string, string[]>) || {},
   };
+}
+
+export async function fetchPolicy(
+  namespace: string,
+  name: string
+): Promise<Record<string, unknown> | null> {
+  const res = await fetch(`/api/policies/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`);
+  if (res.status === 404) {
+    return null;
+  }
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to get policy');
+  }
+  return (data.policy as Record<string, unknown>) || null;
+}
+
+export interface PolicyBundleResponse {
+  policy: Record<string, unknown>;
+  placement?: Record<string, unknown>;
+  placementBinding?: Record<string, unknown>;
+}
+
+export async function fetchPolicyBundle(
+  namespace: string,
+  name: string
+): Promise<PolicyBundleResponse> {
+  const res = await fetch(
+    `/api/policies/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/bundle`
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to get policy bundle');
+  }
+  return data as PolicyBundleResponse;
 }

@@ -7,6 +7,7 @@ import clusterLabelsRouter from './routes/clusterLabels.js';
 import clusterSetsRouter from './routes/clusterSets.js';
 import generateRouter from './routes/generate.js';
 import namespacesRouter from './routes/namespaces.js';
+import policiesRouter from './routes/policies.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,6 +31,7 @@ app.use('/api/apply', applyRouter);
 app.use('/api/namespaces', namespacesRouter);
 app.use('/api/cluster-sets', clusterSetsRouter);
 app.use('/api/cluster-labels', clusterLabelsRouter);
+app.use('/api/policies', policiesRouter);
 
 const publicDir = process.env.PUBLIC_DIR || path.join(__dirname, '../public');
 app.use(express.static(publicDir));
