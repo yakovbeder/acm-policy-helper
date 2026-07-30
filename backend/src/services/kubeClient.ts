@@ -56,6 +56,11 @@ function getKubeConfig(): k8s.KubeConfig {
   return kc;
 }
 
+function getHttpStatus(err: unknown): number | undefined {
+  const e = err as { code?: number; statusCode?: number; response?: { statusCode?: number } };
+  return e.code ?? e.statusCode ?? e.response?.statusCode;
+}
+
 async function applyObject(
   customApi: k8s.CustomObjectsApi,
   obj: KubeObject
@@ -76,30 +81,31 @@ async function applyObject(
     };
   }
 
-  try {
+    try {
     if (namespace) {
       try {
-        await customApi.getNamespacedCustomObject({
+        const existing = (await customApi.getNamespacedCustomObject({
           group,
           version,
           namespace,
           plural,
           name,
-        });
+        })) as KubeObject;
+        const merged = {
+          ...obj,
+          metadata: { ...obj.metadata, resourceVersion: existing.metadata?.resourceVersion },
+        };
         await customApi.replaceNamespacedCustomObject({
           group,
           version,
           namespace,
           plural,
           name,
-          body: obj,
+          body: merged,
         });
         return { kind, name, namespace, status: 'updated' };
       } catch (err: unknown) {
-        const statusCode = (err as { statusCode?: number; response?: { statusCode?: number } })
-          ?.statusCode ||
-          (err as { response?: { statusCode?: number } })?.response?.statusCode;
-        if (statusCode === 404) {
+        if (getHttpStatus(err) === 404) {
           await customApi.createNamespacedCustomObject({
             group,
             version,
@@ -114,20 +120,26 @@ async function applyObject(
     }
 
     try {
-      await customApi.getClusterCustomObject({ group, version, plural, name });
+      const existing = (await customApi.getClusterCustomObject({
+        group,
+        version,
+        plural,
+        name,
+      })) as KubeObject;
+      const merged = {
+        ...obj,
+        metadata: { ...obj.metadata, resourceVersion: existing.metadata?.resourceVersion },
+      };
       await customApi.replaceClusterCustomObject({
         group,
         version,
         plural,
         name,
-        body: obj,
+        body: merged,
       });
       return { kind, name, status: 'updated' };
     } catch (err: unknown) {
-      const statusCode = (err as { statusCode?: number; response?: { statusCode?: number } })
-        ?.statusCode ||
-        (err as { response?: { statusCode?: number } })?.response?.statusCode;
-      if (statusCode === 404) {
+      if (getHttpStatus(err) === 404) {
         await customApi.createClusterCustomObject({
           group,
           version,
