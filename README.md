@@ -41,6 +41,40 @@ Wizard steps can be opened in any order (same as ACM). Required fields (name, na
 4. **Manifests** — edit or upload YAML (including `object-templates-raw` content)
 5. **Review** — generate, download, copy, or apply to the hub
 
+## Screenshots
+
+Example walkthrough using the **etcd encryption** template.
+
+### Template selection
+
+Browse built-in templates by category or search. The detail pane shows description and notes.
+
+![Template selection](docs/screenshots/01-template.png)
+
+### Policy settings
+
+Name, description, remediation, and severity are prefilled from the template; pick a namespace on the hub.
+
+![Policy settings](docs/screenshots/02-policy-settings.png)
+
+### Placement
+
+Target clusters with label selectors (shown: `vendor=OpenShift`) or ManagedClusterSets.
+
+![Placement](docs/screenshots/03-placement.png)
+
+### Manifests
+
+Template manifests are loaded and editable; you can also paste or upload additional YAML.
+
+![Manifests](docs/screenshots/04-manifests.png)
+
+### Review & apply
+
+Generated Policy / Placement / PlacementBinding — download, copy, or apply to the hub.
+
+![Review](docs/screenshots/05-review.png)
+
 ## More docs
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) — local run, tests, image build/versioning
