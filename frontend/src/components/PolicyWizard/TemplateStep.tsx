@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
+  DataList,
+  DataListCell,
+  DataListItem,
+  DataListItemCells,
+  DataListItemRow,
   FormHelperText,
-  Gallery,
-  GalleryItem,
   HelperText,
   HelperTextItem,
   Label,
@@ -31,54 +30,6 @@ interface Props {
 }
 
 type FilterCategory = TemplateCategory | 'all';
-
-const SELECT_GROUP = 'template-gallery-selection';
-
-function TemplateCard({
-  id,
-  titleId,
-  title,
-  description,
-  notes,
-  isSelected,
-  onSelect,
-}: {
-  id: string;
-  titleId: string;
-  title: string;
-  description: string;
-  notes?: string[];
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <Card id={id} isSelectable isSelected={isSelected}>
-      <CardHeader
-        selectableActions={{
-          variant: 'single',
-          name: SELECT_GROUP,
-          selectableActionId: `${id}-input`,
-          selectableActionAriaLabelledby: titleId,
-          onChange: (_event, checked) => {
-            if (checked) {
-              onSelect();
-            }
-          },
-        }}
-      >
-        <CardTitle id={titleId}>{title}</CardTitle>
-      </CardHeader>
-      <CardBody>
-        <p style={{ marginBottom: notes?.length ? '0.75rem' : 0 }}>{description}</p>
-        {notes?.map((note) => (
-          <HelperText key={note} style={{ marginTop: '0.25rem' }}>
-            <HelperTextItem variant="indeterminate">{note}</HelperTextItem>
-          </HelperText>
-        ))}
-      </CardBody>
-    </Card>
-  );
-}
 
 export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTemplate }: Props) {
   const [search, setSearch] = useState('');
@@ -107,6 +58,18 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
 
   const isBlankSelected = selectedTemplateId === null || selectedTemplateId === 'blank';
 
+  const handleSelectBlank = () => {
+    onSelectBlank();
+  };
+
+  const handleSelectTemplate = (_event: React.MouseEvent | React.KeyboardEvent, id: string) => {
+    const templateId = id.replace(/^template-/, '');
+    const template = policyTemplates.find((t) => t.id === templateId);
+    if (template) {
+      onSelectTemplate(template);
+    }
+  };
+
   return (
     <div>
       <Title headingLevel="h2" size="xl" style={{ marginBottom: '0.5rem' }}>
@@ -115,8 +78,8 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
       <FormHelperText style={{ marginBottom: '1rem' }}>
         <HelperText>
           <HelperTextItem>
-            Start from a blank policy or pick a built-in template. Click a card to select it, then
-            continue with Next. Replace any <code>PLACEHOLDER_*</code> values before applying.
+            Start from a blank policy or pick a built-in template.
+            Replace any <code>PLACEHOLDER_*</code> values before applying.
           </HelperTextItem>
         </HelperText>
       </FormHelperText>
@@ -157,44 +120,80 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
         </ToolbarContent>
       </Toolbar>
 
-      <Gallery hasGutter minWidths={{ default: '280px' }} style={{ marginBottom: '1.5rem' }}>
-        <GalleryItem>
-          <TemplateCard
-            id="template-blank"
-            titleId="template-blank-title"
-            title="Blank policy"
-            description="Start from scratch and paste or upload your own manifests."
-            isSelected={isBlankSelected}
-            onSelect={onSelectBlank}
-          />
-        </GalleryItem>
-      </Gallery>
+      {/* Blank policy - always shown */}
+      <DataList
+        aria-label="Blank policy"
+        isCompact
+        selectedDataListItemId={isBlankSelected ? 'template-blank' : ''}
+        onSelectDataListItem={handleSelectBlank}
+      >
+        <DataListItem id="template-blank" aria-labelledby="template-blank-title">
+          <DataListItemRow>
+            <DataListItemCells
+              dataListCells={[
+                <DataListCell key="name" width={2}>
+                  <strong id="template-blank-title">Blank policy</strong>
+                </DataListCell>,
+                <DataListCell key="desc" width={5}>
+                  Start from scratch — paste or upload your own manifests.
+                </DataListCell>,
+              ]}
+            />
+          </DataListItemRow>
+        </DataListItem>
+      </DataList>
 
+      {/* Category groups */}
       {grouped.map((group) => (
-        <div key={group.category} style={{ marginBottom: '1.5rem' }}>
-          <Title headingLevel="h3" size="lg" style={{ marginBottom: '0.75rem' }}>
+        <div key={group.category} style={{ marginTop: '1.5rem' }}>
+          <Title headingLevel="h3" size="md" style={{ marginBottom: '0.5rem' }}>
             {CATEGORY_LABELS[group.category]}
           </Title>
-          <Gallery hasGutter minWidths={{ default: '280px' }}>
+          <DataList
+            aria-label={`${CATEGORY_LABELS[group.category]} templates`}
+            isCompact
+            selectedDataListItemId={
+              group.items.some((t) => t.id === selectedTemplateId)
+                ? `template-${selectedTemplateId}`
+                : ''
+            }
+            onSelectDataListItem={handleSelectTemplate}
+          >
             {group.items.map((template) => (
-              <GalleryItem key={template.id}>
-                <TemplateCard
-                  id={`template-${template.id}`}
-                  titleId={`template-${template.id}-title`}
-                  title={template.name}
-                  description={template.description}
-                  notes={template.notes}
-                  isSelected={selectedTemplateId === template.id}
-                  onSelect={() => onSelectTemplate(template)}
-                />
-              </GalleryItem>
+              <DataListItem
+                key={template.id}
+                id={`template-${template.id}`}
+                aria-labelledby={`template-${template.id}-title`}
+              >
+                <DataListItemRow>
+                  <DataListItemCells
+                    dataListCells={[
+                      <DataListCell key="name" width={2}>
+                        <strong id={`template-${template.id}-title`}>{template.name}</strong>
+                      </DataListCell>,
+                      <DataListCell key="desc" width={5}>
+                        {template.description}
+                        {template.notes && template.notes.length > 0 && (
+                          <HelperText style={{ marginTop: '0.25rem' }}>
+                            {template.notes.map((note) => (
+                              <HelperTextItem key={note} variant="indeterminate">
+                                {note}
+                              </HelperTextItem>
+                            ))}
+                          </HelperText>
+                        )}
+                      </DataListCell>,
+                    ]}
+                  />
+                </DataListItemRow>
+              </DataListItem>
             ))}
-          </Gallery>
+          </DataList>
         </div>
       ))}
 
       {filtered.length === 0 && (
-        <HelperText>
+        <HelperText style={{ marginTop: '1rem' }}>
           <HelperTextItem>No templates match your search.</HelperTextItem>
         </HelperText>
       )}

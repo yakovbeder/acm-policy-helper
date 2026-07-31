@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Form,
   FormGroup,
@@ -20,19 +21,36 @@ interface Props {
 }
 
 export function PolicySettingsStep({ form, onChange }: Props) {
+  // Match ACM: empty required Name shows Required when the step opens.
+  const [nameTouched, setNameTouched] = useState(!form.policyName.trim());
+  const [namespaceTouched, setNamespaceTouched] = useState(false);
+
+  // PF6: validated error + "Required" helper after touch/blur when empty.
+  const nameInvalid = nameTouched && !form.policyName.trim();
+  const namespaceInvalid = namespaceTouched && !form.namespace.trim();
+
   return (
     <Form isHorizontal={false}>
       <FormGroup label="Name" isRequired fieldId="policy-name">
         <TextInput
           id="policy-name"
           value={form.policyName}
-          onChange={(_e, v) => onChange({ policyName: v })}
-          placeholder="Enter a policy name"
+          onChange={(_e, v) => {
+            setNameTouched(true);
+            onChange({ policyName: v });
+          }}
+          onBlur={() => setNameTouched(true)}
+          placeholder="Enter the name"
           isRequired
+          validated={nameInvalid ? 'error' : 'default'}
         />
         <FormHelperText>
           <HelperText>
-            <HelperTextItem>Example: my-config-policy</HelperTextItem>
+            {nameInvalid ? (
+              <HelperTextItem variant="error">Required</HelperTextItem>
+            ) : (
+              <HelperTextItem>Example: my-config-policy</HelperTextItem>
+            )}
           </HelperText>
         </FormHelperText>
       </FormGroup>
@@ -52,7 +70,12 @@ export function PolicySettingsStep({ form, onChange }: Props) {
         <NamespaceSelect
           id="namespace"
           value={form.namespace}
-          onChange={(namespace) => onChange({ namespace })}
+          validated={namespaceInvalid ? 'error' : 'default'}
+          onChange={(namespace) => {
+            setNamespaceTouched(true);
+            onChange({ namespace });
+          }}
+          onBlur={() => setNamespaceTouched(true)}
         />
       </FormGroup>
 

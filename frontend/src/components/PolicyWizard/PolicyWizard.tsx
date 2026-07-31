@@ -147,9 +147,10 @@ export function PolicyWizard({ isDark }: Props) {
   };
 
   const checkExistingPolicy = async (): Promise<boolean> => {
+    // Allow free step navigation like ACM; only prompt when both values are set.
     if (!form.policyName.trim() || !form.namespace.trim()) {
-      setStepError('Policy name and namespace are required.');
-      return false;
+      setStepError(null);
+      return true;
     }
     setStepError(null);
 
@@ -252,7 +253,8 @@ export function PolicyWizard({ isDark }: Props) {
         </ModalFooter>
       </Modal>
 
-      <Wizard isVisitRequired height="100%">
+      {/* No isVisitRequired: match ACM — users can open any step from the nav anytime. */}
+      <Wizard height="100%">
         <WizardStep id="templates" name="Template" footer={<StepFooter />}>
           <TemplateStep
             selectedTemplateId={selectedTemplateId}
@@ -264,37 +266,12 @@ export function PolicyWizard({ isDark }: Props) {
         <WizardStep
           id="settings"
           name="Policy settings"
-          footer={
-            <StepFooter
-              isNextDisabled={!form.policyName.trim() || !form.namespace.trim()}
-              onBeforeNext={checkExistingPolicy}
-            />
-          }
+          footer={<StepFooter onBeforeNext={checkExistingPolicy} />}
         >
           <PolicySettingsStep form={form} onChange={patchForm} />
         </WizardStep>
 
-        <WizardStep
-          id="placement"
-          name="Placement"
-          footer={
-            <StepFooter
-              onBeforeNext={() => {
-                if (
-                  form.placement.mode === 'clusterSets' &&
-                  form.placement.clusterSets.length === 0
-                ) {
-                  setStepError(
-                    'Add at least one ManagedClusterSet, or switch to label selectors.'
-                  );
-                  return false;
-                }
-                setStepError(null);
-                return true;
-              }}
-            />
-          }
-        >
+        <WizardStep id="placement" name="Placement" footer={<StepFooter />}>
           <PlacementStep form={form} onChange={patchForm} />
         </WizardStep>
 
@@ -304,10 +281,22 @@ export function PolicyWizard({ isDark }: Props) {
           footer={
             <StepFooter
               nextLabel="Generate"
-              isNextDisabled={form.manifests.length === 0}
               onBeforeNext={async () => {
                 if (form.manifests.length === 0) {
-                  setStepError('Add at least one YAML manifest.');
+                  setStepError('Add at least one YAML manifest before generating.');
+                  return false;
+                }
+                if (
+                  form.placement.mode === 'clusterSets' &&
+                  form.placement.clusterSets.length === 0
+                ) {
+                  setStepError(
+                    'Add at least one ManagedClusterSet, or switch to label selectors.'
+                  );
+                  return false;
+                }
+                if (!form.policyName.trim() || !form.namespace.trim()) {
+                  setStepError('Policy name and namespace are required before generating.');
                   return false;
                 }
                 return runGenerate();

@@ -283,122 +283,6 @@ spec:
     ],
   },
   {
-    id: 'cc-cluster-monitoring-config',
-    name: 'Cluster monitoring config',
-    description: 'Deploy a simplified cluster-monitoring-config ConfigMap with infra node placement.',
-    category: 'cluster-config',
-    defaults: {
-      ...CC_DEFAULTS,
-      policyName: 'cluster-monitoring-config',
-      description: 'Configures cluster monitoring stack placement and storage',
-      severity: 'low',
-    },
-    notes: [
-      'Replace PLACEHOLDER_STORAGE_CLASS with your StorageClass name.',
-      'Set PLACEHOLDER_NODE_ROLE to infra or worker depending on where monitoring pods should run.',
-    ],
-    manifests: [
-      {
-        name: 'cluster-monitoring-config',
-        content: `apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cluster-monitoring-config
-  namespace: openshift-monitoring
-data:
-  config.yaml: |
-    enableUserWorkload: true
-    prometheusK8s:
-      retention: 7d
-      retentionSize: 90GB
-      nodeSelector:
-        node-role.kubernetes.io/PLACEHOLDER_NODE_ROLE: ""
-      tolerations:
-        - key: node-role.kubernetes.io/infra
-          operator: Exists
-      volumeClaimTemplate:
-        spec:
-          storageClassName: PLACEHOLDER_STORAGE_CLASS
-          resources:
-            requests:
-              storage: 100Gi
-    alertmanagerMain:
-      nodeSelector:
-        node-role.kubernetes.io/PLACEHOLDER_NODE_ROLE: ""
-      tolerations:
-        - key: node-role.kubernetes.io/infra
-          operator: Exists
-      volumeClaimTemplate:
-        spec:
-          storageClassName: PLACEHOLDER_STORAGE_CLASS
-          resources:
-            requests:
-              storage: 10Gi`,
-      },
-    ],
-  },
-  {
-    id: 'cc-user-workload-monitoring-config',
-    name: 'User workload monitoring config',
-    description: 'Deploy a simplified user-workload-monitoring-config ConfigMap.',
-    category: 'cluster-config',
-    defaults: {
-      ...CC_DEFAULTS,
-      policyName: 'user-workload-monitoring-config',
-      description: 'Configures user workload monitoring stack placement and storage',
-      severity: 'low',
-    },
-    notes: [
-      'Replace PLACEHOLDER_STORAGE_CLASS with your StorageClass name.',
-      'Set PLACEHOLDER_NODE_ROLE to infra or worker depending on where monitoring pods should run.',
-    ],
-    manifests: [
-      {
-        name: 'user-workload-monitoring-config',
-        content: `apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: user-workload-monitoring-config
-  namespace: openshift-user-workload-monitoring
-data:
-  config.yaml: |
-    prometheus:
-      retention: 7d
-      retentionSize: 90GB
-      nodeSelector:
-        node-role.kubernetes.io/PLACEHOLDER_NODE_ROLE: ""
-      tolerations:
-        - key: node-role.kubernetes.io/infra
-          operator: Exists
-      volumeClaimTemplate:
-        spec:
-          storageClassName: PLACEHOLDER_STORAGE_CLASS
-          resources:
-            requests:
-              storage: 100Gi
-    prometheusOperator:
-      nodeSelector:
-        node-role.kubernetes.io/PLACEHOLDER_NODE_ROLE: ""
-      tolerations:
-        - key: node-role.kubernetes.io/infra
-          operator: Exists
-    thanosRuler:
-      retention: 7d
-      nodeSelector:
-        node-role.kubernetes.io/PLACEHOLDER_NODE_ROLE: ""
-      tolerations:
-        - key: node-role.kubernetes.io/infra
-          operator: Exists
-      volumeClaimTemplate:
-        spec:
-          storageClassName: PLACEHOLDER_STORAGE_CLASS
-          resources:
-            requests:
-              storage: 50Gi`,
-      },
-    ],
-  },
-  {
     id: 'cc-oauth-openid',
     name: 'OAuth OpenID provider',
     description: 'Configure OpenID identity provider, client secret, and admin group binding.',
@@ -700,6 +584,369 @@ spec:
   remediationAction: inform
   minimumDuration: 24h
   severity: low`,
+      },
+    ],
+  },
+  {
+    id: 'cc-ingress-node-allocation',
+    name: 'Ingress node allocation',
+    description: 'Configure IngressController to run on infra nodes when available, otherwise workers.',
+    category: 'cluster-config',
+    defaults: {
+      ...CC_DEFAULTS,
+      policyName: 'ingress-default',
+      description: 'Configures IngressController to run on infrastructure nodes when available',
+      severity: 'low',
+    },
+    manifests: [
+      {
+        name: 'ingress-node-allocation-raw',
+        content: `object-templates-raw: |
+  {{- $nodeSelector := "node-role.kubernetes.io/worker" }}
+  {{- $nodeTolerations := mustFromJson "[]" }}
+  {{- if (hasNodesWithExactRoles "infra") }}
+    {{- $nodeSelector = "node-role.kubernetes.io/infra" }}
+    {{- $nodeTolerations = mustFromJson "[{\\"operator\\":\\"Exists\\",\\"key\\":\\"node-role.kubernetes.io/infra\\"}]" }}
+  {{- end }}
+  - complianceType: musthave
+    objectDefinition:
+      apiVersion: operator.openshift.io/v1
+      kind: IngressController
+      metadata:
+        name: default
+        namespace: openshift-ingress-operator
+      spec:
+        httpEmptyRequestsPolicy: Respond
+        nodePlacement:
+          nodeSelector:
+            matchLabels:
+              {{ $nodeSelector }}: ""
+          tolerations: '{{ $nodeTolerations | toRawJson | toLiteral }}'
+        replicas: {{ (ge (len (getNodesWithExactRoles "infra").items) 3 | ternary 3 (len (getNodesWithExactRoles "infra").items) | default 3) | toInt }}`,
+      },
+    ],
+  },
+  {
+    id: 'cc-cluster-monitoring-config',
+    name: 'Cluster monitoring config',
+    description: 'Configure cluster monitoring with infra node placement, storage, and ACM observability integration.',
+    category: 'cluster-config',
+    defaults: {
+      ...CC_DEFAULTS,
+      policyName: 'cluster-monitoring-config',
+      description: 'Configures cluster monitoring with infra node placement and persistent storage',
+      severity: 'low',
+    },
+    manifests: [
+      {
+        name: 'cluster-monitoring-config-raw',
+        content: `object-templates-raw: |
+  {{- $defaultSC := "" }}
+  {{- range $sc := (lookup "storage.k8s.io/v1" "StorageClass" "" "").items }}
+    {{- if eq (dig "annotations" "storageclass.kubernetes.io/is-default-class" "false" $sc.metadata) "true" }}
+      {{- $defaultSC = $sc.metadata.name }}
+      {{- break }}
+    {{- end }}
+  {{- end }}
+  {{- $obsNS := (eq (fromClusterClaim "name") "local-cluster" | ternary "open-cluster-management-observability" "open-cluster-management-addon-observability") }}
+  {{- $obsHubInfoSecret := (lookup "v1" "Secret" $obsNS "hub-info-secret") }}
+  {{- $amURL := "" }}
+  {{- $hubClusterID := "" }}
+  {{- $clusterID := "" }}
+  {{- $clusterIDClaim := (lookup "cluster.open-cluster-management.io/v1alpha1" "ClusterClaim" "" "id.openshift.io") }}
+  {{- if not (empty $obsHubInfoSecret) }}
+    {{- $hubInfo := (index $obsHubInfoSecret.data "hub-info.yaml") | base64dec }}
+    {{- range $v := (split "\\n" $hubInfo) }}
+      {{- if (contains "alertmanager-endpoint" $v) }}
+        {{- $amURL = (split " " $v)._1 }}
+      {{- end }}
+      {{- if (contains "hub-cluster-id" $v) }}
+        {{- $hubClusterID = (split " " $v)._1 }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if not (empty $clusterIDClaim) }}
+    {{- $clusterID = $clusterIDClaim.spec.value }}
+  {{- end }}
+  - complianceType: musthave
+    recordDiff: InStatus
+    objectDefinition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: cluster-monitoring-config
+        namespace: openshift-monitoring
+      data:
+        config.yaml: |
+          alertmanagerMain:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+            volumeClaimTemplate:
+              spec:
+                resources:
+                  requests:
+                    storage: 10Gi
+                storageClassName: {{ $defaultSC }}
+          enableUserWorkload: true
+          kubeStateMetrics:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+          metricsServer:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+          monitoringPlugin:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+          nodeExporter:
+            collectors:
+              buddyinfo: {}
+              cpufreq: {}
+              ksmd: {}
+              mountstats: {}
+              netclass: {}
+              netdev: {}
+              processes: {}
+              systemd: {}
+              tcpstat: {}
+          openshiftStateMetrics:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+          prometheusK8s:
+  {{- if not (empty $clusterID) }}
+            externalLabels:
+              managed_cluster: {{ $clusterID }}
+  {{- end }}
+  {{- if and (not (empty $amURL)) (not (empty $hubClusterID)) }}
+            additionalAlertmanagerConfigs:
+            - apiVersion: v2
+              bearerToken:
+                key: token
+                name: observability-alertmanager-accessor-{{ $hubClusterID }}
+              scheme: https
+              staticConfigs:
+              - {{ trimAll "https://" $amURL }}
+              tlsConfig:
+                ca:
+                  key: service-ca.crt
+                  name: hub-alertmanager-router-ca-{{ $hubClusterID }}
+                insecureSkipVerify: false
+  {{- end }}
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+            retention: 7d
+            retentionSize: 90GB
+            volumeClaimTemplate:
+              spec:
+                resources:
+                  requests:
+                    storage: 100Gi
+                storageClassName: {{ $defaultSC }}
+          prometheusOperator:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+          telemeterClient:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+          thanosQuerier:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists`,
+      },
+    ],
+  },
+  {
+    id: 'cc-user-workload-monitoring-config',
+    name: 'User workload monitoring config',
+    description: 'Configure user workload monitoring with infra node placement, retention, remote write, and ACM observability.',
+    category: 'cluster-config',
+    defaults: {
+      ...CC_DEFAULTS,
+      policyName: 'user-workload-monitoring-config',
+      description: 'Configures user workload monitoring with persistent storage and telemetry remote write',
+      severity: 'low',
+    },
+    manifests: [
+      {
+        name: 'user-workload-monitoring-config-raw',
+        content: `object-templates-raw: |
+  {{- $defaultSC := "" }}
+  {{- range $sc := (lookup "storage.k8s.io/v1" "StorageClass" "" "").items }}
+    {{- if eq (dig "annotations" "storageclass.kubernetes.io/is-default-class" "false" $sc.metadata) "true" }}
+      {{- $defaultSC = $sc.metadata.name }}
+      {{- break }}
+    {{- end }}
+  {{- end }}
+  {{- $clusterName := "" }}
+  {{- $clusterID := "" }}
+  {{- $product := "" }}
+  {{- $clusterNameClaim := (lookup "cluster.open-cluster-management.io/v1alpha1" "ClusterClaim" "" "name") }}
+  {{- $clusterIDClaim := (lookup "cluster.open-cluster-management.io/v1alpha1" "ClusterClaim" "" "id.openshift.io") }}
+  {{- $productClaim := (lookup "cluster.open-cluster-management.io/v1alpha1" "ClusterClaim" "" "product.open-cluster-management.io") }}
+  {{- if not (empty $clusterNameClaim) }}
+    {{- $clusterName = $clusterNameClaim.spec.value }}
+  {{- end }}
+  {{- if not (empty $clusterIDClaim) }}
+    {{- $clusterID = $clusterIDClaim.spec.value }}
+  {{- end }}
+  {{- if not (empty $productClaim) }}
+    {{- $product = $productClaim.spec.value }}
+  {{- end }}
+  {{- $obsNS := (eq $clusterName "local-cluster" | ternary "open-cluster-management-observability" "open-cluster-management-addon-observability") }}
+  {{- $obsHubInfoSecret := (lookup "v1" "Secret" $obsNS "hub-info-secret") }}
+  {{- $amURL := "" }}
+  {{- $hubClusterID := "" }}
+  {{- $amTokenSecretName := "" }}
+  {{- $amCASecretName := "" }}
+  {{- if not (empty $obsHubInfoSecret) }}
+    {{- $hubInfo := (index $obsHubInfoSecret.data "hub-info.yaml") | base64dec }}
+    {{- range $v := (split "\\n" $hubInfo) }}
+      {{- if (contains "alertmanager-endpoint" $v) }}
+        {{- $amURL = (split " " $v)._1 }}
+      {{- end }}
+      {{- if (contains "hub-cluster-id" $v) }}
+        {{- $hubClusterID = (split " " $v)._1 }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if not (empty $hubClusterID) }}
+    {{- $amTokenSecretName = printf "observability-alertmanager-accessor-%s" $hubClusterID }}
+    {{- $amCASecretName = printf "hub-alertmanager-router-ca-%s" $hubClusterID }}
+  {{- end }}
+  - complianceType: musthave
+    recordDiff: InStatus
+    objectDefinition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: user-workload-monitoring-config
+        namespace: openshift-user-workload-monitoring
+      data:
+        config.yaml: |
+          prometheus:
+            externalLabels:
+              instance_name: {{ $n := split "." (lookup "config.openshift.io/v1" "Infrastructure" "" "cluster").status.apiServerURL }}{{ $n._1 }}
+  {{- if not (empty $clusterID) }}
+              managed_cluster: {{ $clusterID }}
+  {{- end }}
+  {{- if not (empty $product) }}
+              product: {{ $product }}
+  {{- end }}
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+  {{- if and (not (empty $amURL)) (not (empty $hubClusterID)) }}
+            additionalAlertmanagerConfigs:
+            - apiVersion: v2
+              bearerToken:
+                key: token
+                name: {{ $amTokenSecretName }}
+              pathPrefix: /
+              scheme: https
+              staticConfigs:
+              - {{ trimAll "https://" $amURL }}
+              tlsConfig:
+                ca:
+                  key: service-ca.crt
+                  name: {{ $amCASecretName }}
+                insecureSkipVerify: false
+  {{- end }}
+            remoteWrite:
+            - authorization:
+                credentials:
+                  key: token
+                  name: telemetry-remote-write
+                type: Bearer
+              metadataConfig:
+                send: false
+              queueConfig:
+                batchSendDeadline: 1m
+                capacity: 30000
+                maxBackoff: 256s
+                maxSamplesPerSend: 10000
+                minBackoff: 1s
+              url: https://infogw.api.openshift.com/metrics/v1/receive
+              writeRelabelConfigs:
+              - action: keep
+                regex: .+
+                sourceLabels:
+                - _id
+              - action: keep
+                regex: (count:up0|count:up1|cluster_version|cluster_version_available_updates|cluster_version_capability|cluster_operator_up|cluster_operator_conditions|cluster_version_payload|cluster_installer|cluster_infrastructure_provider|cluster_feature_set|instance:etcd_object_counts:sum|ALERTS|code:apiserver_request_total:rate:sum|cluster:capacity_cpu_cores:sum|cluster:capacity_memory_bytes:sum|cluster:cpu_usage_cores:sum|cluster:memory_usage_bytes:sum|openshift:cpu_usage_cores:sum|openshift:memory_usage_bytes:sum|workload:cpu_usage_cores:sum|workload:memory_usage_bytes:sum|cluster:virt_platform_nodes:sum|cluster:node_instance_type_count:sum|cnv:vmi_status_running:count|cnv_abnormal|cluster:vmi_request_cpu_cores:sum|node_role_os_version_machine:cpu_capacity_cores:sum|node_role_os_version_machine:cpu_capacity_sockets:sum|subscription_sync_total|olm_resolution_duration_seconds|csv_succeeded|csv_abnormal|cluster:kube_persistentvolumeclaim_resource_requests_storage_bytes:provisioner:sum|cluster:kubelet_volume_stats_used_bytes:provisioner:sum|ceph_cluster_total_bytes|ceph_cluster_total_used_raw_bytes|ceph_health_status|odf_system_raw_capacity_total_bytes|odf_system_raw_capacity_used_bytes|odf_system_health_status|job:ceph_osd_metadata:count|job:kube_pv:count|job:odf_system_pvs:count|job:ceph_pools_iops:total|job:ceph_pools_iops_bytes:total|job:ceph_versions_running:count|job:noobaa_total_unhealthy_buckets:sum|job:noobaa_bucket_count:sum|job:noobaa_total_object_count:sum|odf_system_bucket_count|odf_system_objects_total|noobaa_accounts_num|noobaa_total_usage|console_url|cluster:console_auth_login_requests_total:sum|cluster:console_auth_login_successes_total:sum|cluster:console_auth_login_failures_total:sum|cluster:console_auth_logout_requests_total:sum|cluster:console_usage_users:max|cluster:console_plugins_info:max|cluster:console_customization_perspectives_info:max|cluster:ovnkube_controller_egress_routing_via_host:max|cluster:ovnkube_controller_admin_network_policies_db_objects:max|cluster:ovnkube_controller_baseline_admin_network_policies_db_objects:max|cluster:ovnkube_controller_admin_network_policies_rules:max|cluster:ovnkube_controller_baseline_admin_network_policies_rules:max|cluster:network_attachment_definition_instances:max|cluster:network_attachment_definition_enabled_instance_up:max|cluster:ingress_controller_aws_nlb_active:sum|cluster:route_metrics_controller_routes_per_shard:min|cluster:route_metrics_controller_routes_per_shard:max|cluster:route_metrics_controller_routes_per_shard:avg|cluster:route_metrics_controller_routes_per_shard:median|cluster:openshift_route_info:tls_termination:sum|openshift:gateway_api_usage:count|insightsclient_request_send_total|cam_app_workload_migrations|cluster:apiserver_current_inflight_requests:sum:max_over_time:2m|cluster:alertmanager_integrations:max|cluster:telemetry_selected_series:count|openshift:prometheus_tsdb_head_series:sum|openshift:prometheus_tsdb_head_samples_appended_total:sum|monitoring:container_memory_working_set_bytes:sum|namespace_job:scrape_series_added:topk3_sum1h|namespace_job:scrape_samples_post_metric_relabeling:topk3|monitoring:haproxy_server_http_responses_total:sum|profile:cluster_monitoring_operator_collection_profile:max|vendor_model:node_accelerator_cards:sum|rhmi_status|status:upgrading:version:rhoam_state:max|state:rhoam_critical_alerts:max|state:rhoam_warning_alerts:max|rhoam_7d_slo_percentile:max|rhoam_7d_slo_remaining_error_budget:max|cluster_legacy_scheduler_policy|cluster_master_schedulable|che_workspace_status|che_workspace_started_total|che_workspace_failure_total|che_workspace_start_time_seconds_sum|che_workspace_start_time_seconds_count|cco_credentials_mode|cluster:kube_persistentvolume_plugin_type_counts:sum|acm_managed_cluster_info|acm_managed_cluster_worker_cores:max|acm_console_page_count:sum|cluster:vsphere_vcenter_info:sum|cluster:vsphere_esxi_version_total:sum|cluster:vsphere_node_hw_version_total:sum|openshift:build_by_strategy:sum|rhods_aggregate_availability|rhods_total_users|instance:etcd_disk_wal_fsync_duration_seconds:histogram_quantile|instance:etcd_mvcc_db_total_size_in_bytes:sum|instance:etcd_network_peer_round_trip_time_seconds:histogram_quantile|instance:etcd_mvcc_db_total_size_in_use_in_bytes:sum|instance:etcd_disk_backend_commit_duration_seconds:histogram_quantile|jaeger_operator_instances_storage_types|jaeger_operator_instances_strategies|jaeger_operator_instances_agent_strategies|type:tempo_operator_tempostack_storage_backend:sum|state:tempo_operator_tempostack_managed:sum|type:tempo_operator_tempostack_multi_tenancy:sum|enabled:tempo_operator_tempostack_jaeger_ui:sum|type:opentelemetry_collector_receivers:sum|type:opentelemetry_collector_exporters:sum|type:opentelemetry_collector_processors:sum|type:opentelemetry_collector_extensions:sum|type:opentelemetry_collector_connectors:sum|type:opentelemetry_collector_info:sum|appsvcs:cores_by_product:sum|nto_custom_profiles:count|openshift_csi_share_configmap|openshift_csi_share_secret|openshift_csi_share_mount_failures_total|openshift_csi_share_mount_requests_total|eo_es_storage_info|eo_es_redundancy_policy_info|eo_es_defined_delete_namespaces_total|eo_es_misconfigured_memory_resources_info|cluster:eo_es_data_nodes_total:max|cluster:eo_es_documents_created_total:sum|cluster:eo_es_documents_deleted_total:sum|pod:eo_es_shards_total:max|eo_es_cluster_management_state_info|imageregistry:imagestreamtags_count:sum|imageregistry:operations_count:sum|log_logging_info|log_collector_error_count_total|log_forwarder_pipeline_info|log_forwarder_input_info|log_forwarder_output_info|cluster:log_collected_bytes_total:sum|cluster:log_logged_bytes_total:sum|openshift_logging:log_forwarder_pipelines:sum|openshift_logging:log_forwarders:sum|openshift_logging:log_forwarder_input_type:sum|openshift_logging:log_forwarder_output_type:sum|openshift_logging:vector_component_received_bytes_total:rate5m|cluster:kata_monitor_running_shim_count:sum|platform:hypershift_hostedclusters:max|platform:hypershift_nodepools:max|cluster_name:hypershift_nodepools_size:sum|cluster_name:hypershift_nodepools_available_replicas:sum|namespace:noobaa_unhealthy_bucket_claims:max|namespace:noobaa_buckets_claims:max|namespace:noobaa_unhealthy_namespace_resources:max|namespace:noobaa_namespace_resources:max|namespace:noobaa_unhealthy_namespace_buckets:max|namespace:noobaa_namespace_buckets:max|namespace:noobaa_accounts:max|namespace:noobaa_usage:max|namespace:noobaa_system_health_status:max|ocs_advanced_feature_usage|os_image_url_override:sum|cluster:mcd_nodes_with_unsupported_packages:count|cluster:mcd_total_unsupported_packages:sum|cluster:vsphere_topology_tags:max|cluster:vsphere_infrastructure_failure_domains:max|apiserver_list_watch_request_success_total:rate:sum|rhacs:telemetry:rox_central_info|rhacs:telemetry:rox_central_secured_clusters|rhacs:telemetry:rox_central_secured_nodes|rhacs:telemetry:rox_central_secured_vcpus|rhacs:telemetry:rox_sensor_info|cluster:volume_manager_selinux_pod_context_mismatch_total|cluster:volume_manager_selinux_volume_context_mismatch_warnings_total|cluster:volume_manager_selinux_volume_context_mismatch_errors_total|cluster:volume_manager_selinux_volumes_admitted_total|ols:provider_model_configuration|ols:rest_api_query_calls_total:2xx|ols:rest_api_query_calls_total:4xx|ols:rest_api_query_calls_total:5xx|openshift:openshift_network_operator_ipsec_state:info|cluster:health:group_severity:count|cluster:controlplane_topology:info|cluster:infrastructure_topology:info|cluster:selinux_warning_controller_selinux_volume_conflict:count|cluster:mtv_migrations_status_total:sum)
+                sourceLabels:
+                - __name__
+            retention: 7d
+            retentionSize: 90GB
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+            volumeClaimTemplate:
+              spec:
+                resources:
+                  requests:
+                    storage: 100Gi
+                storageClassName: {{ $defaultSC }}
+          prometheusOperator:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+          thanosRuler:
+            nodeSelector:
+              node-role.kubernetes.io/{{ hasNodesWithExactRoles "infra" | ternary "infra" "worker" }}: ""
+            retention: 7d
+            tolerations:
+            - key: node-role.kubernetes.io/infra
+              operator: Exists
+            volumeClaimTemplate:
+              spec:
+                resources:
+                  requests:
+                    storage: 50Gi
+                storageClassName: {{ $defaultSC }}
+  {{- if and (not (empty $amTokenSecretName)) (not (empty $amCASecretName)) }}
+  - complianceType: mustonlyhave
+    objectDefinition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: {{ $amCASecretName }}
+        namespace: openshift-user-workload-monitoring
+      data: '{{ copySecretData "openshift-monitoring" $amCASecretName }}'
+  - complianceType: mustonlyhave
+    objectDefinition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: {{ $amTokenSecretName }}
+        namespace: openshift-user-workload-monitoring
+      data: '{{ copySecretData "openshift-monitoring" $amTokenSecretName }}'
+  {{- end }}`,
       },
     ],
   },

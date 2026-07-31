@@ -7,9 +7,17 @@ interface Props {
   id: string;
   value: string;
   onChange: (namespace: string) => void;
+  onBlur?: () => void;
+  validated?: 'default' | 'error' | 'warning' | 'success';
 }
 
-export function NamespaceSelect({ id, value, onChange }: Props) {
+export function NamespaceSelect({
+  id,
+  value,
+  onChange,
+  onBlur,
+  validated = 'default',
+}: Props) {
   const [namespaces, setNamespaces] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,12 +69,14 @@ export function NamespaceSelect({ id, value, onChange }: Props) {
     );
   }
 
+  const showError = validated === 'error';
+
   return (
     <>
       <TypeaheadSelect
         id={id}
         initialOptions={options}
-        placeholder="Select or type a namespace"
+        placeholder="Select namespace"
         onSelect={(_e, selection) => {
           if (selection) {
             onChange(String(selection));
@@ -80,15 +90,23 @@ export function NamespaceSelect({ id, value, onChange }: Props) {
         isCreatable
         createOptionMessage={(filter) => `Use namespace "${filter}"`}
         noOptionsFoundMessage={(filter) => `No namespaces matching "${filter}"`}
-        toggleProps={{ isFullWidth: true }}
+        toggleProps={{
+          isFullWidth: true,
+          status: showError ? 'danger' : undefined,
+          onBlur,
+        }}
       />
       <FormHelperText>
         <HelperText>
-          <HelperTextItem>
-            {error
-              ? `Could not list cluster namespaces (${error}). Type a namespace name.`
-              : 'The namespace on the hub cluster where the policy resources will be created.'}
-          </HelperTextItem>
+          {showError ? (
+            <HelperTextItem variant="error">Required</HelperTextItem>
+          ) : (
+            <HelperTextItem>
+              {error
+                ? `Could not list cluster namespaces (${error}). Type a namespace name.`
+                : 'The namespace on the hub cluster where the policy resources will be created.'}
+            </HelperTextItem>
+          )}
         </HelperText>
       </FormHelperText>
     </>
