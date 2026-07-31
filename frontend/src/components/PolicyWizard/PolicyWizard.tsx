@@ -93,6 +93,8 @@ export function PolicyWizard({ isDark }: Props) {
     setForm((prev) => ({ ...prev, ...patch }));
     setStepError(null);
     setGenerateError(null);
+    // Any wizard change invalidates the Review preview until Generate/Regenerate
+    setGeneratedYaml('');
     // Changing name/namespace leaves edit mode so existence can be re-checked
     if ('policyName' in patch || 'namespace' in patch) {
       setEditMode('create');

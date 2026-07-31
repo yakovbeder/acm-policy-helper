@@ -63,11 +63,14 @@ export async function uploadManifest(page: Page, filePath: string) {
  * Set YAML in a PatternFly/Monaco CodeEditor via clipboard paste (most reliable).
  */
 export async function fillYamlEditor(page: Page, text: string, index = 0) {
-  await expect(page.getByRole('textbox', { name: 'Editor content' }).nth(index)).toBeAttached({
-    timeout: 15_000,
-  });
+  // LazyYamlEditor may still be fetching the Monaco chunk under parallel load.
+  const loading = page.getByLabel('Loading YAML editor');
+  await loading.waitFor({ state: 'hidden', timeout: 60_000 }).catch(() => undefined);
   const surface = page.locator('.monaco-editor').nth(index);
-  await expect(surface).toBeVisible({ timeout: 15_000 });
+  await expect(surface).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('textbox', { name: 'Editor content' }).nth(index)).toBeAttached({
+    timeout: 30_000,
+  });
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.evaluate(async (value) => {
     await navigator.clipboard.writeText(value);

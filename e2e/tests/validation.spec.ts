@@ -4,9 +4,36 @@ import {
   fillPolicySettings,
   fixtureYaml,
   uploadManifest,
+  wizardToReview,
 } from './helpers';
 
 test.describe('Wizard validation and error paths', () => {
+  test('clears Review YAML when settings or manifests change', async ({ page }) => {
+    test.setTimeout(90_000);
+    await wizardToReview(page, { name: 'e2e-stale-yaml' });
+    await expect(page.getByRole('button', { name: 'Download YAML' })).toBeVisible();
+
+    // Changing settings invalidates the preview
+    await page.getByRole('button', { name: 'Policy settings' }).click();
+    await page.locator('#policy-name').fill('e2e-stale-yaml-renamed');
+    await page.getByRole('button', { name: 'Review & apply' }).click();
+    await expect(page.getByText('No generated YAML yet')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Download YAML' })).toHaveCount(0);
+
+    // Regenerate, then removing manifests clears again
+    await page.getByRole('button', { name: 'Manifests' }).click();
+    await page.getByRole('button', { name: 'Generate' }).click();
+    await expect(page.getByRole('button', { name: 'Download YAML' })).toBeVisible({
+      timeout: 60_000,
+    });
+    await page.getByRole('button', { name: 'Manifests' }).click();
+    await page.getByRole('button', { name: /Remove / }).click();
+    await expect(page.getByText('No manifests added yet')).toBeVisible();
+    await page.getByRole('button', { name: 'Review & apply' }).click();
+    await expect(page.getByText('No generated YAML yet')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Download YAML' })).toHaveCount(0);
+  });
+
   test('disables Generate and Regenerate when there are no manifests', async ({ page }) => {
     await page.goto('/');
     await continueFromTemplateStep(page);
