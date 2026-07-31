@@ -157,6 +157,12 @@ await page.locator('#policy-name').click();
 await page.waitForTimeout(300);
 await screenshot('02-policy-settings.png');
 
+// Lower half: Prune Object Behavior + Standards / Categories / Controls + footer
+await page.getByText('Standards', { exact: true }).scrollIntoViewIfNeeded();
+await page.waitForTimeout(300);
+await ensureFooterVisible();
+await screenshot('02b-policy-settings-more.png');
+
 // Placement with a matchLabel
 await page.getByRole('button', { name: /placement/i }).first().click();
 await page.waitForTimeout(800);

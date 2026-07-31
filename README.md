@@ -57,6 +57,10 @@ Name, description, remediation, and severity are prefilled from the template; pi
 
 ![Policy settings](docs/screenshots/02-policy-settings.png)
 
+Lower fields: prune behavior, plus standards, categories, and controls metadata.
+
+![Policy settings continued](docs/screenshots/02b-policy-settings-more.png)
+
 ### Placement
 
 Target clusters with label selectors (shown: `vendor=OpenShift`) or ManagedClusterSets.
