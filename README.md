@@ -28,7 +28,7 @@ This creates the namespace and oauth-proxy secret (if needed), applies manifests
 Pin a specific tag when needed:
 
 ```bash
-IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:1.5.0 ./deploy/install.sh
+IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:1.6.0 ./deploy/install.sh
 ```
 
 ## Usage
