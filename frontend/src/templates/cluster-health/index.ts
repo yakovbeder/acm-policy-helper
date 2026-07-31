@@ -509,4 +509,26 @@ spec:
       },
     ],
   },
+  {
+    id: 'ch-namespaces-terminating',
+    name: 'No terminating namespaces',
+    description: 'Inform when any Namespace is stuck in Terminating phase.',
+    category: 'cluster-health',
+    defaults: {
+      ...CH_DEFAULTS,
+      policyName: 'namespaces-terminating',
+      description: 'Reports namespaces stuck in Terminating',
+      complianceType: 'mustnothave',
+      severity: 'low',
+    },
+    manifests: [
+      {
+        name: 'terminating-namespace',
+        content: `apiVersion: v1
+kind: Namespace
+status:
+  phase: Terminating`,
+      },
+    ],
+  },
 ];

@@ -47,6 +47,106 @@ spec:
     ],
   },
   {
+    id: 'cc-idms',
+    name: 'ImageDigestMirrorSet (IDMS)',
+    description:
+      'Configure digest-based registry mirrors with ImageDigestMirrorSet (preferred for OCP release and operator images).',
+    category: 'cluster-config',
+    defaults: {
+      ...CC_DEFAULTS,
+      policyName: 'idms',
+      description: 'Ensures ImageDigestMirrorSet registry mirrors exist',
+      severity: 'high',
+    },
+    notes: [
+      'Replace PLACEHOLDER_IDMS_NAME, PLACEHOLDER_SOURCE_REGISTRY, and PLACEHOLDER_MIRROR_REGISTRY.',
+      'Add more imageDigestMirrors entries for additional source/mirror pairs.',
+      'Use NeverContactSource instead of AllowContactingSource for fully disconnected clusters.',
+      'Add multiple IDMS manifests in one ConfigurationPolicy when they share the same compliance settings.',
+    ],
+    manifests: [
+      {
+        name: 'imagedigestmirrorset',
+        content: `apiVersion: config.openshift.io/v1
+kind: ImageDigestMirrorSet
+metadata:
+  name: PLACEHOLDER_IDMS_NAME
+spec:
+  imageDigestMirrors:
+    - source: PLACEHOLDER_SOURCE_REGISTRY
+      mirrors:
+        - PLACEHOLDER_MIRROR_REGISTRY
+      mirrorSourcePolicy: AllowContactingSource`,
+      },
+    ],
+  },
+  {
+    id: 'cc-itms',
+    name: 'ImageTagMirrorSet (ITMS)',
+    description:
+      'Configure tag-based registry mirrors with ImageTagMirrorSet (for images pulled by tag).',
+    category: 'cluster-config',
+    defaults: {
+      ...CC_DEFAULTS,
+      policyName: 'itms',
+      description: 'Ensures ImageTagMirrorSet registry mirrors exist',
+      severity: 'high',
+    },
+    notes: [
+      'Replace PLACEHOLDER_ITMS_NAME, PLACEHOLDER_SOURCE_REGISTRY, and PLACEHOLDER_MIRROR_REGISTRY.',
+      'Add more imageTagMirrors entries for additional source/mirror pairs.',
+      'Prefer IDMS for digest pulls; use ITMS when workloads pull by tag.',
+      'Add multiple ITMS manifests in one ConfigurationPolicy when they share the same compliance settings.',
+    ],
+    manifests: [
+      {
+        name: 'imagetagmirrorset',
+        content: `apiVersion: config.openshift.io/v1
+kind: ImageTagMirrorSet
+metadata:
+  name: PLACEHOLDER_ITMS_NAME
+spec:
+  imageTagMirrors:
+    - source: PLACEHOLDER_SOURCE_REGISTRY
+      mirrors:
+        - PLACEHOLDER_MIRROR_REGISTRY
+      mirrorSourcePolicy: AllowContactingSource`,
+      },
+    ],
+  },
+  {
+    id: 'cc-console-link',
+    name: 'ConsoleLink',
+    description:
+      'Add a custom link to the OpenShift web console (Help menu by default).',
+    category: 'cluster-config',
+    defaults: {
+      ...CC_DEFAULTS,
+      policyName: 'console-link',
+      description: 'Ensures a ConsoleLink exists in the OpenShift console',
+      severity: 'low',
+    },
+    notes: [
+      'Replace PLACEHOLDER_LINK_NAME, PLACEHOLDER_HREF, and PLACEHOLDER_TEXT.',
+      'Default location is HelpMenu; other values are ApplicationMenu, UserMenu, and NamespaceDashboard.',
+      'For ApplicationMenu, add applicationMenu.section and optionally applicationMenu.imageURL.',
+      'For NamespaceDashboard, add namespaceDashboard.namespace.',
+    ],
+    manifests: [
+      {
+        name: 'consolelink',
+        content: `apiVersion: console.openshift.io/v1
+kind: ConsoleLink
+metadata:
+  name: PLACEHOLDER_LINK_NAME
+spec:
+  href: PLACEHOLDER_HREF
+  location: HelpMenu
+  text: PLACEHOLDER_TEXT`,
+      },
+    ],
+  },
+  {
     id: 'cc-proxy-custom-ca',
     name: 'Proxy custom CA bundle',
     description: 'Install a custom CA bundle ConfigMap and reference it from the cluster Proxy.',
@@ -438,8 +538,8 @@ status:
   },
   {
     id: 'cc-cert-expiry-inform',
-    name: 'Certificate expiry (inform)',
-    description: 'Inform when OpenShift platform certificates are nearing expiry.',
+    name: 'Certificate expiry',
+    description: 'Report when OpenShift platform certificates are nearing expiry.',
     category: 'cluster-config',
     defaults: {
       remediationAction: 'inform' as const,
@@ -454,6 +554,7 @@ status:
     },
     notes: [
       'These manifests are CertificatePolicy resources, not standard Kubernetes objects.',
+      'CertificatePolicy only supports remediationAction: inform (no enforce).',
       'Verify your ACM version supports CertificatePolicy in policy-templates.',
       'After generation you may need to keep CertificatePolicy entries as native policy-templates rather than ConfigurationPolicy wrappers.',
     ],
