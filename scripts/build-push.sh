@@ -40,6 +40,6 @@ podman push "${LATEST_IMAGE}"
 echo "Published ${VERSION_IMAGE} (and latest)."
 
 if [[ "${DEPLOY}" -eq 1 ]]; then
-  echo "Deploying ${VERSION_IMAGE}..."
-  IMAGE="${VERSION_IMAGE}" "${ROOT}/deploy/install.sh"
+  echo "Deploying ${LATEST_IMAGE}..."
+  IMAGE="${LATEST_IMAGE}" "${ROOT}/deploy/install.sh"
 fi

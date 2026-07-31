@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
+# Deploy ACM Policy Helper to OpenShift.
+# Defaults to quay.io/rh-ee-ybeder/acm-policy-helper:latest and forces a pull/rollout.
+# Override with IMAGE=quay.io/.../acm-policy-helper:<tag> or IMAGE_REPO=...
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 NAMESPACE="${NAMESPACE:-acm-policy-helper}"
 IMAGE_REPO="${IMAGE_REPO:-quay.io/rh-ee-ybeder/acm-policy-helper}"
-VERSION="$(node -p "require('${ROOT}/package.json').version")"
-IMAGE="${IMAGE:-${IMAGE_REPO}:${VERSION}}"
+IMAGE="${IMAGE:-${IMAGE_REPO}:latest}"
 
 echo "Creating namespace ${NAMESPACE}..."
 oc apply -f "$(dirname "$0")/namespace.yaml"
@@ -25,6 +27,8 @@ oc apply -k "$(dirname "$0")"
 oc set image deployment/acm-policy-helper \
   acm-policy-helper="${IMAGE}" \
   -n "${NAMESPACE}"
+# Always restart so :latest (or a retagged digest) is re-pulled.
+oc rollout restart deployment/acm-policy-helper -n "${NAMESPACE}"
 
 echo "Waiting for rollout..."
 oc rollout status deployment/acm-policy-helper -n "${NAMESPACE}" --timeout=180s
