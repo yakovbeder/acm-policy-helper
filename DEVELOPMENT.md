@@ -30,6 +30,36 @@ npm run dev
 
 See [API.md](API.md) for endpoints.
 
+## Commit messages
+
+This repo uses [Conventional Commits](https://www.conventionalcommits.org/). New commits are linted by commitlint via a husky `commit-msg` hook.
+
+Format:
+
+```text
+type(optional-scope): description
+```
+
+Allowed types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`, `build`, `perf`, `style`.
+
+Subject rules:
+
+- Use the imperative mood (`add`, not `added` / `adds`)
+- Do not capitalize the first letter after the colon
+- Do not end the subject with a period
+- Keep the subject concise (about 72 characters or less)
+
+Examples:
+
+```bash
+git commit -m "feat(wizard): add blank template category"
+git commit -m "fix(e2e): stop hanging when kube catalog is unavailable"
+git commit -m "docs: document conventional commits"
+git commit -m "chore: bump version to 1.5.0"
+```
+
+After `npm install`, the prepare script installs husky locally (skipped when `CI=true` or `HUSKY=0`).
+
 ## Tests
 
 ```bash
