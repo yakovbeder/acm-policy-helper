@@ -437,42 +437,6 @@ status:
     ],
   },
   {
-    id: 'cc-ingress-default',
-    name: 'IngressController default placement',
-    description: 'Configure the default IngressController to run on infra or worker nodes.',
-    category: 'cluster-config',
-    defaults: {
-      ...CC_DEFAULTS,
-      policyName: 'ingress-default',
-      description: 'Configures default IngressController node placement',
-      severity: 'low',
-    },
-    notes: [
-      'Set PLACEHOLDER_NODE_SELECTOR_ROLE to infra or worker.',
-      'Adjust replicas if your cluster has fewer than three infra nodes.',
-    ],
-    manifests: [
-      {
-        name: 'ingress-default',
-        content: `apiVersion: operator.openshift.io/v1
-kind: IngressController
-metadata:
-  name: default
-  namespace: openshift-ingress-operator
-spec:
-  httpEmptyRequestsPolicy: Respond
-  nodePlacement:
-    nodeSelector:
-      matchLabels:
-        node-role.kubernetes.io/PLACEHOLDER_NODE_SELECTOR_ROLE: ""
-    tolerations:
-      - key: node-role.kubernetes.io/infra
-        operator: Exists
-  replicas: 3`,
-      },
-    ],
-  },
-  {
     id: 'cc-cert-expiry-inform',
     name: 'Certificate expiry (inform)',
     description: 'Inform when OpenShift platform certificates are nearing expiry.',
