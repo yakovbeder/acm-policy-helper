@@ -36,7 +36,7 @@ Requires `oc` logged into a cluster that can pull:
 
 ### Image versioning
 
-Container tags follow the root [`package.json`](package.json) `version` field (for example `1.0.0`). Release flow:
+Container tags follow the root [`package.json`](package.json) `version` field (for example `1.1.0`). Release flow:
 
 1. Bump `version` in the root `package.json` when you cut a release
 2. Build and push `:version` and `:latest`: `./scripts/build-push.sh` (or `npm run image:build-push`)
