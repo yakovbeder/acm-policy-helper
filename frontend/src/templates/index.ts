@@ -1,5 +1,5 @@
 import { clusterConfigTemplates } from './cluster-config';
-import { operatorTemplates } from './operators';
+import { clusterHealthTemplates } from './cluster-health';
 import type { PolicyTemplate, TemplateCategory } from './types';
 
 export type { PolicyTemplate, TemplateCategory } from './types';
@@ -7,8 +7,8 @@ export { CATEGORY_LABELS, CATEGORY_ORDER } from './types';
 export { formFromTemplate, manifestsFromTemplate } from './helpers';
 
 export const policyTemplates: PolicyTemplate[] = [
-  ...operatorTemplates,
   ...clusterConfigTemplates,
+  ...clusterHealthTemplates,
 ];
 
 export function getTemplateById(id: string): PolicyTemplate | undefined {

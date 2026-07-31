@@ -33,10 +33,10 @@ IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:1.2.0 ./deploy/install.sh
 
 ## Usage
 
-1. **Template** — blank policy or a built-in starter
+1. **Template** — select blank or a built-in starter (radio on each card), then Next
 2. **Policy settings** — name, namespace, remediation, severity, compliance type
 3. **Placement** — cluster label selectors or ManagedClusterSets
-4. **Manifests** — paste or upload YAML (skipped content comes from the template)
+4. **Manifests** — edit YAML; replace any `PLACEHOLDER_*` values before apply
 5. **Review** — download, copy, or apply to the hub
 
 ## More docs

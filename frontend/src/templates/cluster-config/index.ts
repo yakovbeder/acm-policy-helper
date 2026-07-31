@@ -1,4 +1,5 @@
 import type { PolicyTemplate } from '../types';
+import { additionalClusterConfigTemplates } from './additional';
 import { etcdBackupManifests } from '../manifests/etcd-backup.content';
 
 const CC_DEFAULTS = {
@@ -280,4 +281,5 @@ status:
       },
     ],
   },
+  ...additionalClusterConfigTemplates,
 ];

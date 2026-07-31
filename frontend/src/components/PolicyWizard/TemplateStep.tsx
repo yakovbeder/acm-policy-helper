@@ -32,6 +32,54 @@ interface Props {
 
 type FilterCategory = TemplateCategory | 'all';
 
+const SELECT_GROUP = 'template-gallery-selection';
+
+function TemplateCard({
+  id,
+  titleId,
+  title,
+  description,
+  notes,
+  isSelected,
+  onSelect,
+}: {
+  id: string;
+  titleId: string;
+  title: string;
+  description: string;
+  notes?: string[];
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <Card id={id} isSelectable isSelected={isSelected}>
+      <CardHeader
+        selectableActions={{
+          variant: 'single',
+          name: SELECT_GROUP,
+          selectableActionId: `${id}-input`,
+          selectableActionAriaLabelledby: titleId,
+          onChange: (_event, checked) => {
+            if (checked) {
+              onSelect();
+            }
+          },
+        }}
+      >
+        <CardTitle id={titleId}>{title}</CardTitle>
+      </CardHeader>
+      <CardBody>
+        <p style={{ marginBottom: notes?.length ? '0.75rem' : 0 }}>{description}</p>
+        {notes?.map((note) => (
+          <HelperText key={note} style={{ marginTop: '0.25rem' }}>
+            <HelperTextItem variant="indeterminate">{note}</HelperTextItem>
+          </HelperText>
+        ))}
+      </CardBody>
+    </Card>
+  );
+}
+
 export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTemplate }: Props) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<FilterCategory>('all');
@@ -67,8 +115,8 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
       <FormHelperText style={{ marginBottom: '1rem' }}>
         <HelperText>
           <HelperTextItem>
-            Start from a blank policy or pick a built-in template. You can edit name, placement, and
-            manifests in the following steps.
+            Start from a blank policy or pick a built-in template. Click a card to select it, then
+            continue with Next. Replace any <code>PLACEHOLDER_*</code> values before applying.
           </HelperTextItem>
         </HelperText>
       </FormHelperText>
@@ -111,18 +159,14 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
 
       <Gallery hasGutter minWidths={{ default: '280px' }} style={{ marginBottom: '1.5rem' }}>
         <GalleryItem>
-          <Card
+          <TemplateCard
             id="template-blank"
-            isSelectable
+            titleId="template-blank-title"
+            title="Blank policy"
+            description="Start from scratch and paste or upload your own manifests."
             isSelected={isBlankSelected}
-            onClick={onSelectBlank}
-            isClickable
-          >
-            <CardHeader>
-              <CardTitle>Blank policy</CardTitle>
-            </CardHeader>
-            <CardBody>Start from scratch and paste or upload your own manifests.</CardBody>
-          </Card>
+            onSelect={onSelectBlank}
+          />
         </GalleryItem>
       </Gallery>
 
@@ -134,27 +178,15 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
           <Gallery hasGutter minWidths={{ default: '280px' }}>
             {group.items.map((template) => (
               <GalleryItem key={template.id}>
-                <Card
+                <TemplateCard
                   id={`template-${template.id}`}
-                  isSelectable
+                  titleId={`template-${template.id}-title`}
+                  title={template.name}
+                  description={template.description}
+                  notes={template.notes}
                   isSelected={selectedTemplateId === template.id}
-                  onClick={() => onSelectTemplate(template)}
-                  isClickable
-                >
-                  <CardHeader>
-                    <CardTitle>{template.name}</CardTitle>
-                  </CardHeader>
-                  <CardBody>
-                    <p style={{ marginBottom: template.notes?.length ? '0.75rem' : 0 }}>
-                      {template.description}
-                    </p>
-                    {template.notes?.map((note) => (
-                      <HelperText key={note} style={{ marginTop: '0.25rem' }}>
-                        <HelperTextItem variant="indeterminate">{note}</HelperTextItem>
-                      </HelperText>
-                    ))}
-                  </CardBody>
-                </Card>
+                  onSelect={() => onSelectTemplate(template)}
+                />
               </GalleryItem>
             ))}
           </Gallery>

@@ -1,6 +1,6 @@
 import type { PolicyFormState } from '../types';
 
-export type TemplateCategory = 'operators' | 'cluster-config';
+export type TemplateCategory = 'cluster-config' | 'cluster-health';
 
 export interface PolicyTemplate {
   id: string;
@@ -13,8 +13,8 @@ export interface PolicyTemplate {
 }
 
 export const CATEGORY_LABELS: Record<TemplateCategory, string> = {
-  operators: 'Operators',
   'cluster-config': 'Cluster config',
+  'cluster-health': 'Cluster health',
 };
 
-export const CATEGORY_ORDER: TemplateCategory[] = ['operators', 'cluster-config'];
+export const CATEGORY_ORDER: TemplateCategory[] = ['cluster-config', 'cluster-health'];

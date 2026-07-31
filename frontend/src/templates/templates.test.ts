@@ -16,12 +16,14 @@ describe('policy templates catalog', () => {
     }
   });
 
-  it('does not include Gatekeeper or Kyverno templates', () => {
+  it('does not include operator, Gatekeeper, or Kyverno templates', () => {
     const haystack = policyTemplates
-      .map((t) => `${t.id} ${t.name} ${t.description} ${t.manifests.map((m) => m.content).join('\n')}`)
+      .map((t) => `${t.id} ${t.name} ${t.description}`)
       .join('\n')
       .toLowerCase();
     expect(haystack).not.toMatch(/gatekeeper|kyverno/);
+    expect(policyTemplates.some((t) => t.id.startsWith('op-'))).toBe(false);
+    expect(CATEGORY_ORDER).not.toContain('operators');
   });
 
   it('parses every template manifest as YAML', () => {

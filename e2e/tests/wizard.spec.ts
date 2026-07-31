@@ -47,7 +47,8 @@ test.describe('ACM Policy Helper wizard', () => {
 
   test('selects a built-in template and pre-fills settings', async ({ page }) => {
     await page.goto('/');
-    await page.locator('#template-cc-remove-kubeadmin').click();
+    // PF selectable tiles use a hidden radio that covers the card
+    await page.locator('#template-cc-remove-kubeadmin-input').check({ force: true });
     await page.getByRole('button', { name: 'Next' }).click();
     await expect(page.locator('#policy-name')).toHaveValue('remove-kubeadmin');
     await expect(page.locator('#compliance-type')).toBeVisible();
@@ -56,7 +57,7 @@ test.describe('ACM Policy Helper wizard', () => {
   test('generates policy yaml from a built-in template', async ({ page }) => {
     test.setTimeout(120_000);
     await page.goto('/');
-    await page.locator('#template-cc-cluster-banner').click();
+    await page.locator('#template-cc-cluster-banner-input').check({ force: true });
     await page.getByRole('button', { name: 'Next' }).click();
     await expect(page.locator('#policy-name')).toHaveValue('cluster-banner');
 
