@@ -49,13 +49,15 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs unit + e2e on p
 
 ## Image versioning and release
 
-Container tags follow the root [`package.json`](package.json) `version` field (for example `1.5.0`). Every release also updates `:latest`.
+Current app version: **1.5.0** (root and workspace `package.json` fields must stay in sync).
+
+Container tags follow the root [`package.json`](package.json) `version` field. Every release also updates `:latest`.
 
 Install/deploy on the cluster always uses **`:latest`** unless `IMAGE` is set (see [README.md](README.md)).
 
 Release flow:
 
-1. Bump `version` in the root `package.json` (and workspaces if needed)
+1. Bump `version` in root, `frontend`, `backend`, and `e2e` `package.json`, plus version examples in [README.md](README.md) / this file
 2. Build and push `:version` and `:latest`:
 
    ```bash
