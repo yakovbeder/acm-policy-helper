@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 NAMESPACE="${NAMESPACE:-acm-policy-helper}"
-IMAGE="${IMAGE:-quay.io/rh-ee-ybeder/acm-policy-helper:latest}"
+IMAGE_REPO="${IMAGE_REPO:-quay.io/rh-ee-ybeder/acm-policy-helper}"
+VERSION="$(node -p "require('${ROOT}/package.json').version")"
+IMAGE="${IMAGE:-${IMAGE_REPO}:${VERSION}}"
 
 echo "Creating namespace ${NAMESPACE}..."
 oc apply -f "$(dirname "$0")/namespace.yaml"

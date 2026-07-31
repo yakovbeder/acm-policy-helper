@@ -31,8 +31,18 @@ Browser → OpenShift Route → ose-oauth-proxy-rhel9 → ACM Policy Helper (Exp
 
 Requires `oc` logged into a cluster that can pull:
 
-- App image: `quay.io/rh-ee-ybeder/acm-policy-helper:latest`
+- App image: `quay.io/rh-ee-ybeder/acm-policy-helper:<version>` (version from root `package.json`; `latest` is also published)
 - OAuth proxy: `registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.20` (cluster pull secret / entitlement)
+
+### Image versioning
+
+Container tags follow the root [`package.json`](package.json) `version` field (for example `1.0.0`). Release flow:
+
+1. Bump `version` in the root `package.json` when you cut a release
+2. Build and push `:version` and `:latest`: `./scripts/build-push.sh` (or `npm run image:build-push`)
+3. Deploy that version: `./deploy/install.sh` (defaults to `quay.io/rh-ee-ybeder/acm-policy-helper:<version>`)
+
+Or build, push, and deploy in one step: `./scripts/build-push.sh --deploy` (or `npm run image:release`).
 
 ### Install
 
@@ -40,7 +50,7 @@ Requires `oc` logged into a cluster that can pull:
 ./deploy/install.sh
 ```
 
-Optional: pin a different image tag:
+Optional: override the image (repo or tag):
 
 ```bash
 IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:<tag> ./deploy/install.sh
@@ -93,13 +103,10 @@ TLS uses the OpenShift service CA (`service.beta.openshift.io/serving-cert-secre
 
 ## Alternative: build and push your own image
 
-Use this if you want a custom tag, a private registry, or to iterate on changes before publishing.
+Use this if you want a custom registry or org. Tags still come from root `package.json` version:
 
 ```bash
-podman build -t quay.io/<org>/acm-policy-helper:latest .
-podman push quay.io/<org>/acm-policy-helper:latest
-
-IMAGE=quay.io/<org>/acm-policy-helper:latest ./deploy/install.sh
+IMAGE_REPO=quay.io/<org>/acm-policy-helper ./scripts/build-push.sh --deploy
 ```
 
 The image is based on `registry.access.redhat.com/ubi9/nodejs-22` and embeds PolicyGenerator v1.19.0.
