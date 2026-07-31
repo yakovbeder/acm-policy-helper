@@ -43,6 +43,8 @@ Non-linear wizard — steps can be opened in any order. Required fields (name, n
 4. **Manifests** — edit or upload YAML (including `object-templates-raw` content)
 5. **Review** — generate, download, copy, or apply to the hub
 
+If a policy with the same name already exists in the chosen namespace, leaving **Policy settings** opens a dialog: **Fetch and edit** loads the hub policy into the wizard, or **Continue as new** keeps your draft and overwrites on apply (`created` / `updated`).
+
 ## Screenshots
 
 Example walkthrough using the **etcd encryption** template.
@@ -80,6 +82,12 @@ Template manifests are loaded and editable; you can also paste or upload additio
 Generated Policy / Placement / PlacementBinding — download, copy, or apply to the hub.
 
 ![Review](docs/screenshots/05-review.png)
+
+### Policy already exists
+
+When the name and namespace match a policy on the hub, choose whether to fetch and edit it or continue and overwrite on apply.
+
+![Policy exists](docs/screenshots/06-policy-exists.png)
 
 ## Compatibility
 

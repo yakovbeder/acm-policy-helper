@@ -163,6 +163,34 @@ await page.waitForTimeout(300);
 await ensureFooterVisible();
 await screenshot('02b-policy-settings-more.png');
 
+// Policy exists modal (mock hub policy so Next from settings triggers the dialog)
+const policyName = (await page.locator('#policy-name').inputValue()).trim();
+await page.route('**/api/policies/**', async (route) => {
+  const url = route.request().url();
+  // Only mock the existence check, not /bundle
+  if (url.includes('/bundle')) {
+    return route.continue();
+  }
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      policy: {
+        apiVersion: 'policy.open-cluster-management.io/v1',
+        kind: 'Policy',
+        metadata: { name: policyName || 'policy-etcd-encryption', namespace: 'policies' },
+      },
+    }),
+  });
+});
+await page.getByRole('button', { name: /^next$/i }).click();
+await page.getByRole('heading', { name: /policy exists/i }).waitFor({ timeout: 10000 });
+await page.waitForTimeout(400);
+await screenshot('06-policy-exists.png');
+await page.getByRole('button', { name: /^cancel$/i }).click();
+await page.waitForTimeout(300);
+await page.unroute('**/api/policies/**');
+
 // Placement with a matchLabel
 await page.getByRole('button', { name: /placement/i }).first().click();
 await page.waitForTimeout(800);

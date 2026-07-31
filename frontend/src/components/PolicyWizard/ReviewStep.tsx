@@ -153,7 +153,14 @@ export function ReviewStep({
         </Alert>
       )}
 
-      <LazyYamlEditor value={yaml} onChange={() => undefined} isDark={isDark} readOnly height="480px" />
+      <LazyYamlEditor
+        value={yaml}
+        onChange={() => undefined}
+        isDark={isDark}
+        readOnly
+        height="480px"
+        isResizable
+      />
     </div>
   );
 }
