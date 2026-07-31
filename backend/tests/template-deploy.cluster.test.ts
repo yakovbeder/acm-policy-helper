@@ -23,16 +23,24 @@ const describeCluster = runCluster ? describe : describe.skip;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const TEST_NS = process.env.TEMPLATE_DEPLOY_NAMESPACE || 'acm-policy-helper-e2e';
 const NAME_PREFIX = 'aph-tpl-';
+/** PolicyGenerator requires namespace.name length ≤ 63. */
+const MAX_POLICY_QUALIFIED_NAME = 63;
 
 function oc(...args: string[]): string {
   return execFileSync('oc', args, { encoding: 'utf8' }).trim();
+}
+
+function policyNameFor(templateId: string): string {
+  const raw = `${NAME_PREFIX}${templateId}`.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+  const maxLen = MAX_POLICY_QUALIFIED_NAME - TEST_NS.length - 1;
+  return raw.slice(0, Math.max(1, maxLen)).replace(/-+$/g, '');
 }
 
 function toGenerateRequest(
   templateId: string,
   form: ReturnType<typeof formFromTemplate>
 ): GenerateRequest {
-  const policyName = `${NAME_PREFIX}${templateId}`.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
+  const policyName = policyNameFor(templateId);
   return {
     policyName,
     namespace: TEST_NS,

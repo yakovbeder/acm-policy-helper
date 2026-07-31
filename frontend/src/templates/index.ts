@@ -3,7 +3,7 @@ import { clusterHealthTemplates } from './cluster-health';
 import type { PolicyTemplate, TemplateCategory } from './types';
 
 export type { PolicyTemplate, TemplateCategory } from './types';
-export { CATEGORY_LABELS, CATEGORY_ORDER } from './types';
+export { CATEGORY_LABELS, CATEGORY_LABEL_COLORS, CATEGORY_ORDER } from './types';
 export { formFromTemplate, manifestsFromTemplate } from './helpers';
 
 export const policyTemplates: PolicyTemplate[] = [

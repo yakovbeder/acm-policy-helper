@@ -17,4 +17,10 @@ export const CATEGORY_LABELS: Record<TemplateCategory, string> = {
   'cluster-health': 'Cluster health',
 };
 
+/** PF6 Label colors for category chips (list + detail). */
+export const CATEGORY_LABEL_COLORS: Record<TemplateCategory, 'blue' | 'green'> = {
+  'cluster-config': 'blue',
+  'cluster-health': 'green',
+};
+
 export const CATEGORY_ORDER: TemplateCategory[] = ['cluster-config', 'cluster-health'];

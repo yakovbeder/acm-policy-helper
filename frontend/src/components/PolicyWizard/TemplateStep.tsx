@@ -23,6 +23,7 @@ import {
 } from '@patternfly/react-core';
 import {
   CATEGORY_LABELS,
+  CATEGORY_LABEL_COLORS,
   CATEGORY_ORDER,
   policyTemplates,
   type PolicyTemplate,
@@ -65,17 +66,14 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
   const selectedTemplate = !isBlankSelected
     ? policyTemplates.find((t) => t.id === selectedTemplateId) ?? null
     : null;
-  const selectedDataListItemId = isBlankSelected
-    ? 'template-blank'
-    : selectedTemplate
-      ? `template-${selectedTemplate.id}`
-      : 'template-blank';
+  const selectedTemplateListId =
+    !isBlankSelected && selectedTemplate ? `template-${selectedTemplate.id}` : '';
 
-  const handleSelect = (_event: React.MouseEvent | React.KeyboardEvent, id: string) => {
-    if (id === 'template-blank') {
-      onSelectBlank();
-      return;
-    }
+  const handleSelectBlank = () => {
+    onSelectBlank();
+  };
+
+  const handleSelectTemplate = (_event: React.MouseEvent | React.KeyboardEvent, id: string) => {
     const templateId = id.replace(/^template-/, '');
     const template = policyTemplates.find((t) => t.id === templateId);
     if (template) {
@@ -89,7 +87,12 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
     : (selectedTemplate?.description ?? BLANK_DESCRIPTION);
   const detailNotes = isBlankSelected ? undefined : selectedTemplate?.notes;
   const detailCategory =
-    !isBlankSelected && selectedTemplate ? CATEGORY_LABELS[selectedTemplate.category] : null;
+    !isBlankSelected && selectedTemplate
+      ? {
+          label: CATEGORY_LABELS[selectedTemplate.category],
+          color: CATEGORY_LABEL_COLORS[selectedTemplate.category],
+        }
+      : null;
 
   return (
     <div>
@@ -132,6 +135,7 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
                   buttonId={`template-category-${cat}`}
                   isSelected={category === cat}
                   onChange={() => setCategory(cat)}
+                  className={`template-category-toggle template-category-toggle--${cat}`}
                 />
               ))}
             </ToggleGroup>
@@ -141,12 +145,12 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
 
       <Grid hasGutter>
         <GridItem md={5} sm={12}>
-          <div className="template-primary-list">
+          <div className="template-blank-box">
             <DataList
-              aria-label="Policy templates"
+              aria-label="Blank policy"
               isCompact
-              selectedDataListItemId={selectedDataListItemId}
-              onSelectDataListItem={handleSelect}
+              selectedDataListItemId={isBlankSelected ? 'template-blank' : ''}
+              onSelectDataListItem={handleSelectBlank}
             >
               <DataListItem id="template-blank" aria-labelledby="template-blank-title">
                 <DataListItemRow>
@@ -159,6 +163,16 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
                   />
                 </DataListItemRow>
               </DataListItem>
+            </DataList>
+          </div>
+
+          <div className="template-primary-list">
+            <DataList
+              aria-label="Policy templates"
+              isCompact
+              selectedDataListItemId={selectedTemplateListId}
+              onSelectDataListItem={handleSelectTemplate}
+            >
               {orderedTemplates.map((template) => (
                 <DataListItem
                   key={template.id}
@@ -173,7 +187,7 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
                           {category === 'all' && (
                             <Label
                               isCompact
-                              color="grey"
+                              color={CATEGORY_LABEL_COLORS[template.category]}
                               style={{ marginLeft: '0.5rem' }}
                             >
                               {CATEGORY_LABELS[template.category]}
@@ -200,8 +214,12 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
               {detailTitle}
             </Title>
             {detailCategory && (
-              <Label isCompact color="blue" style={{ marginBottom: '0.75rem' }}>
-                {detailCategory}
+              <Label
+                isCompact
+                color={detailCategory.color}
+                style={{ marginBottom: '0.75rem' }}
+              >
+                {detailCategory.label}
               </Label>
             )}
             <Content component={ContentVariants.p}>{detailDescription}</Content>

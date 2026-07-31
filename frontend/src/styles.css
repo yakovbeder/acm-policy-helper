@@ -32,6 +32,32 @@ body {
   grid-template-columns: var(--pf-t--global--font--size--body--default) 1fr;
 }
 
+.template-blank-box {
+  margin-bottom: var(--pf-t--global--spacer--md);
+  border: var(--pf-t--global--border--width--regular) solid
+    var(--pf-t--global--border--color--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+}
+
+/* Category ToggleGroup: match PF Label blue / green when selected. */
+.template-category-toggle--cluster-config {
+  --pf-v6-c-toggle-group__button--m-selected--BackgroundColor: var(
+    --pf-t--global--color--nonstatus--blue--default
+  );
+  --pf-v6-c-toggle-group__button--m-selected--Color: var(
+    --pf-t--global--text--color--nonstatus--on-blue--default
+  );
+}
+
+.template-category-toggle--cluster-health {
+  --pf-v6-c-toggle-group__button--m-selected--BackgroundColor: var(
+    --pf-t--global--color--nonstatus--green--default
+  );
+  --pf-v6-c-toggle-group__button--m-selected--Color: var(
+    --pf-t--global--text--color--nonstatus--on-green--default
+  );
+}
+
 .template-primary-list {
   max-height: 28rem;
   overflow: auto;
