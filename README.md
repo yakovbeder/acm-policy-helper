@@ -1,18 +1,20 @@
 # ACM Policy Helper
 
-Web UI to generate Open Cluster Management (ACM) Configuration Policies from Kubernetes YAML manifests.
+Web UI for generating Open Cluster Management (ACM) governance policy bundles.
 
-Produces a `Policy` (with `ConfigurationPolicy`), `Placement`, `PlacementBinding`, and optionally `ManagedClusterSetBinding`. Runs on OpenShift behind OAuth so the Route opens with the cluster login page.
+Produces a complete `Policy` (with `ConfigurationPolicy`), `Placement`, `PlacementBinding`, and optionally `ManagedClusterSetBinding` from Kubernetes YAML manifests or built-in templates.
 
-Built-in templates cover cluster config, cluster health, security, and access control. Starters are adapted from:
+Built-in templates cover cluster config and cluster health categories. Starters are adapted from:
 
 - [bry-tam/acm-policy-samples](https://github.com/bry-tam/acm-policy-samples)
 - [stolostron/policy-collection](https://github.com/stolostron/policy-collection)
 - [ch-stark/etcd-backup-policy](https://github.com/ch-stark/etcd-backup-policy)
 
-Many templates use PolicyGenerator `object-templates-raw` with Go templating (`lookup`, `dig`, and related helpers) so they evaluate dynamically on managed clusters. Review names, placement, and any remaining site-specific values before applying.
+Many templates use PolicyGenerator `object-templates-raw` with Go templating (`lookup`, `dig`, and related helpers) so they evaluate dynamically on managed clusters. Replace any `PLACEHOLDER_*` values and review placement before applying.
 
 ## Deploy on OpenShift
+
+Deployed with an OAuth-protected Route — opens with the cluster login page.
 
 Requires `oc` logged into a cluster. Images used (mirror these for disconnected environments):
 
@@ -23,7 +25,7 @@ Requires `oc` logged into a cluster. Images used (mirror these for disconnected 
 ./deploy/install.sh
 ```
 
-This creates the namespace and oauth-proxy secret (if needed), applies manifests, pulls **latest**, waits for rollout, and prints the Route URL. Open the URL and sign in with OpenShift OAuth.
+This creates the namespace and oauth-proxy secret (if needed), applies manifests, pulls `latest`, waits for rollout, and prints the Route URL.
 
 Pin a specific tag when needed:
 
@@ -33,7 +35,7 @@ IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:1.6.0 ./deploy/install.sh
 
 ## Usage
 
-Wizard steps can be opened in any order (same as ACM). Required fields (name, namespace) show PatternFly validation when empty.
+Non-linear wizard — steps can be opened in any order. Required fields (name, namespace) show PatternFly validation when empty. The output is a complete policy bundle ready to apply to the hub.
 
 1. **Template** — pick blank or a built-in starter from the category list
 2. **Policy settings** — name, namespace, remediation, severity, compliance type
@@ -57,7 +59,7 @@ Name, description, remediation, and severity are prefilled from the template; pi
 
 ![Policy settings](docs/screenshots/02-policy-settings.png)
 
-Lower fields: prune behavior, plus standards, categories, and controls metadata.
+Scroll down for prune behavior and compliance metadata (standards, categories, controls).
 
 ![Policy settings continued](docs/screenshots/02b-policy-settings-more.png)
 
@@ -78,6 +80,10 @@ Template manifests are loaded and editable; you can also paste or upload additio
 Generated Policy / Placement / PlacementBinding — download, copy, or apply to the hub.
 
 ![Review](docs/screenshots/05-review.png)
+
+## Compatibility
+
+Compatible with ACM 2.15–2.17.
 
 ## Documentation
 
