@@ -14,10 +14,10 @@ Many templates use PolicyGenerator `object-templates-raw` with Go templating (`l
 
 ## Deploy on OpenShift
 
-Requires `oc` logged into a cluster that can pull:
+Requires `oc` logged into a cluster. Images used (mirror these for disconnected environments):
 
 - `quay.io/rh-ee-ybeder/acm-policy-helper:latest`
-- `registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.20` (cluster pull secret / entitlement)
+- `registry.redhat.io/openshift4/ose-oauth-proxy-rhel9:v4.20`
 
 ```bash
 ./deploy/install.sh
