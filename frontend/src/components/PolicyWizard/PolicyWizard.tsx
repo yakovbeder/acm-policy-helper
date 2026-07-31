@@ -281,6 +281,7 @@ export function PolicyWizard({ isDark }: Props) {
           footer={
             <StepFooter
               nextLabel="Generate"
+              isNextDisabled={form.manifests.length === 0}
               onBeforeNext={async () => {
                 if (form.manifests.length === 0) {
                   setStepError('Add at least one YAML manifest before generating.');
@@ -323,6 +324,7 @@ export function PolicyWizard({ isDark }: Props) {
           footer={
             <StepFooter
               nextLabel="Regenerate"
+              isNextDisabled={form.manifests.length === 0}
               onBeforeNext={async () => {
                 await runGenerate();
                 return false;

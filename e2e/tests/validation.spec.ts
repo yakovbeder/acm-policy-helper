@@ -7,16 +7,13 @@ import {
 } from './helpers';
 
 test.describe('Wizard validation and error paths', () => {
-  test('blocks generate when there are no manifests', async ({ page }) => {
+  test('disables generate when there are no manifests', async ({ page }) => {
     await page.goto('/');
     await continueFromTemplateStep(page);
     await fillPolicySettings(page, { name: 'e2e-no-manifests' });
     await page.getByRole('button', { name: 'Manifests' }).click();
     await expect(page.getByText('No manifests added yet')).toBeVisible();
-    await page.getByRole('button', { name: 'Generate' }).click();
-    await expect(
-      page.getByText('Add at least one YAML manifest before generating.')
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Generate' })).toBeDisabled();
   });
 
   test('blocks generate when policy name and namespace are missing', async ({ page }) => {
