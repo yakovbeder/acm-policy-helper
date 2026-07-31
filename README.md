@@ -79,9 +79,9 @@ Generated Policy / Placement / PlacementBinding — download, copy, or apply to 
 
 ![Review](docs/screenshots/05-review.png)
 
-## More docs
+## Documentation
 
-- [DEVELOPMENT.md](DEVELOPMENT.md) — local run, tests, image build/versioning
+- [DEVELOPMENT.md](DEVELOPMENT.md) — local development, tests, image build and versioning
 - [API.md](API.md) — HTTP API reference
 
 ## License
