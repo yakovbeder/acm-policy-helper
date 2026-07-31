@@ -55,7 +55,7 @@ Examples:
 git commit -m "feat(wizard): add blank template category"
 git commit -m "fix(e2e): stop hanging when kube catalog is unavailable"
 git commit -m "docs: document conventional commits"
-git commit -m "chore: bump version to 1.6.0"
+git commit -m "chore: bump version to 1.7.0"
 ```
 
 After `npm install`, the prepare script installs husky locally (skipped when `CI=true` or `HUSKY=0`).
@@ -79,7 +79,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs unit + e2e on p
 
 ## Image versioning and release
 
-Current app version: **1.6.0** (root and workspace `package.json` fields must stay in sync).
+Current app version: **1.7.0** (root and workspace `package.json` fields must stay in sync).
 
 Container tags follow the root [`package.json`](package.json) `version` field. Every release also updates `:latest`.
 
