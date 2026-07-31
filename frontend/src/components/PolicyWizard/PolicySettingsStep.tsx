@@ -21,9 +21,9 @@ interface Props {
 }
 
 export function PolicySettingsStep({ form, onChange }: Props) {
-  // Match ACM: empty required Name shows Required when the step opens.
+  // Match ACM: empty required fields show Required when the step opens.
   const [nameTouched, setNameTouched] = useState(!form.policyName.trim());
-  const [namespaceTouched, setNamespaceTouched] = useState(false);
+  const [namespaceTouched, setNamespaceTouched] = useState(!form.namespace.trim());
 
   // PF6: validated error + "Required" helper after touch/blur when empty.
   const nameInvalid = nameTouched && !form.policyName.trim();

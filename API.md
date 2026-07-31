@@ -14,6 +14,7 @@ Base URL (local): `http://localhost:8080`
 | `GET` | `/api/namespaces` | List hub namespaces |
 | `GET` | `/api/cluster-sets` | List ManagedClusterSets |
 | `GET` | `/api/cluster-labels` | List ManagedCluster label keys/values |
+| `GET` | `/api/placement-targets?namespace=` | Bound ManagedClusterSets + clusters for a namespace |
 | `GET` | `/api/policies/:namespace/:name` | Get a Policy |
 | `GET` | `/api/policies/:namespace/:name/bundle` | Get Policy + Placement + PlacementBinding |
 
@@ -106,6 +107,20 @@ On catalog/kube errors may return `500` with an empty list (see route behavior).
   }
 }
 ```
+
+### `GET /api/placement-targets?namespace=<ns>`
+
+Lists `ManagedClusterSetBinding`s in the policy namespace and the ManagedClusters currently in those sets (for empty Placement label-selector awareness).
+
+```json
+{
+  "namespace": "acm-policy",
+  "clusterSets": ["default", "managed"],
+  "clusters": ["local-cluster"]
+}
+```
+
+`400` if `namespace` is missing. On kube errors may return `500` with empty `clusterSets` / `clusters`.
 
 ### `GET /api/policies/:namespace/:name`
 

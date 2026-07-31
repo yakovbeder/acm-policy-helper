@@ -57,7 +57,7 @@ export interface ApplyResult {
 
 export const defaultFormState = (): PolicyFormState => ({
   policyName: '',
-  namespace: 'policies',
+  namespace: '',
   remediationAction: 'inform',
   severity: 'low',
   complianceType: 'musthave',

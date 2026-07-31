@@ -19,7 +19,7 @@ export function manifestsFromTemplate(
   }));
 }
 
-/** Apply a template into a fresh form (keeps namespace default unless template overrides). */
+/** Apply a template into a fresh form (namespace stays empty unless template overrides). */
 export function formFromTemplate(template: PolicyTemplate): PolicyFormState {
   const base = defaultFormState();
   const defaults = template.defaults;

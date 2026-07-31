@@ -136,6 +136,7 @@ export function ManifestsStep({ form, onChange, isDark }: Props) {
               isDark={isDark}
               onLintErrors={setPasteErrors}
               height="280px"
+              isResizable
             />
             {pasteErrors.length > 0 && (
               <Alert
@@ -290,6 +291,7 @@ export function ManifestsStep({ form, onChange, isDark }: Props) {
             }
             isDark={isDark}
             height="220px"
+            isResizable
           />
           {manifest.lintErrors && manifest.lintErrors.length > 0 && (
             <Alert variant="danger" title="Lint errors" isInline style={{ marginTop: '0.5rem' }}>

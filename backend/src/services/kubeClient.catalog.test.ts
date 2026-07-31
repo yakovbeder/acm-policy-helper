@@ -3,6 +3,7 @@ import {
   listManagedClusterLabels,
   listManagedClusterSets,
   listNamespaces,
+  listPlacementTargets,
 } from './kubeClient.js';
 
 describe('cluster catalog disable flag', () => {
@@ -17,6 +18,11 @@ describe('cluster catalog disable flag', () => {
     await expect(listManagedClusterLabels()).resolves.toEqual({
       keys: [],
       valuesByKey: {},
+    });
+    await expect(listPlacementTargets('policies')).resolves.toEqual({
+      namespace: 'policies',
+      clusterSets: [],
+      clusters: [],
     });
   });
 });

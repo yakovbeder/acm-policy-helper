@@ -85,6 +85,27 @@ export async function fetchClusterLabels(): Promise<ClusterLabelCatalog> {
   };
 }
 
+export interface PlacementTargets {
+  namespace: string;
+  clusterSets: string[];
+  clusters: string[];
+}
+
+export async function fetchPlacementTargets(namespace: string): Promise<PlacementTargets> {
+  const res = await fetch(
+    `/api/placement-targets?namespace=${encodeURIComponent(namespace.trim())}`
+  );
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to list placement targets');
+  }
+  return {
+    namespace: (data.namespace as string) || namespace.trim(),
+    clusterSets: (data.clusterSets as string[]) || [],
+    clusters: (data.clusters as string[]) || [],
+  };
+}
+
 export async function fetchPolicy(
   namespace: string,
   name: string

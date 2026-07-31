@@ -257,7 +257,7 @@ export function hydrateFormFromPolicyBundle(bundle: PolicyBundle): HydrateResult
   const form: PolicyFormState = {
     ...base,
     policyName: metadata.name || '',
-    namespace: metadata.namespace || 'policies',
+    namespace: metadata.namespace || '',
     remediationAction,
     severity,
     complianceType,

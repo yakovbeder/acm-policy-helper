@@ -204,6 +204,74 @@ export interface ClusterLabelCatalog {
   valuesByKey: Record<string, string[]>;
 }
 
+export interface PlacementTargets {
+  namespace: string;
+  clusterSets: string[];
+  clusters: string[];
+}
+
+const CLUSTERSET_LABEL = 'cluster.open-cluster-management.io/clusterset';
+
+/**
+ * Resolve ManagedClusterSetBindings in a namespace and the ManagedClusters
+ * those sets currently include (for empty Placement labelSelector awareness).
+ */
+export async function listPlacementTargets(namespace: string): Promise<PlacementTargets> {
+  const ns = namespace.trim();
+  if (isClusterCatalogDisabled() || !ns) {
+    return { namespace: ns, clusterSets: [], clusters: [] };
+  }
+
+  const kc = getKubeConfig();
+  const customApi = kc.makeApiClient(k8s.CustomObjectsApi);
+
+  const [bindingsResponse, clustersResponse] = await Promise.all([
+    customApi.listNamespacedCustomObject({
+      group: 'cluster.open-cluster-management.io',
+      version: 'v1beta2',
+      namespace: ns,
+      plural: 'managedclustersetbindings',
+    }) as Promise<{
+      items?: Array<{ spec?: { clusterSet?: string }; metadata?: { name?: string } }>;
+    }>,
+    customApi.listClusterCustomObject({
+      group: 'cluster.open-cluster-management.io',
+      version: 'v1',
+      plural: 'managedclusters',
+    }) as Promise<{ items?: NamedCustomObject[] }>,
+  ]);
+
+  const clusterSets = Array.from(
+    new Set(
+      (bindingsResponse.items ?? [])
+        .map((item) => item.spec?.clusterSet || item.metadata?.name)
+        .filter((name): name is string => Boolean(name))
+    )
+  ).sort((a, b) => a.localeCompare(b));
+
+  const allClusters = (clustersResponse.items ?? [])
+    .map((item) => ({
+      name: item.metadata?.name,
+      clusterSet: item.metadata?.labels?.[CLUSTERSET_LABEL],
+    }))
+    .filter((c): c is { name: string; clusterSet: string | undefined } => Boolean(c.name));
+
+  let clusters: string[];
+  if (clusterSets.length === 0) {
+    clusters = [];
+  } else if (clusterSets.includes('global')) {
+    clusters = allClusters.map((c) => c.name).sort((a, b) => a.localeCompare(b));
+  } else {
+    const setNames = new Set(clusterSets);
+    clusters = allClusters
+      .filter((c) => c.clusterSet && setNames.has(c.clusterSet))
+      .map((c) => c.name)
+      .sort((a, b) => a.localeCompare(b));
+  }
+
+  return { namespace: ns, clusterSets, clusters };
+}
+
 export async function listManagedClusterLabels(): Promise<ClusterLabelCatalog> {
   if (isClusterCatalogDisabled()) {
     return { keys: [], valuesByKey: {} };

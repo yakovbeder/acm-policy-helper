@@ -1,16 +1,22 @@
 import { useMemo, useState } from 'react';
 import {
+  Content,
+  ContentVariants,
   DataList,
   DataListCell,
   DataListItem,
   DataListItemCells,
   DataListItemRow,
   FormHelperText,
+  Grid,
+  GridItem,
   HelperText,
   HelperTextItem,
   Label,
   SearchInput,
   Title,
+  ToggleGroup,
+  ToggleGroupItem,
   Toolbar,
   ToolbarContent,
   ToolbarItem,
@@ -31,6 +37,8 @@ interface Props {
 
 type FilterCategory = TemplateCategory | 'all';
 
+const BLANK_DESCRIPTION = 'Start from scratch — paste or upload your own manifests.';
+
 export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTemplate }: Props) {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<FilterCategory>('all');
@@ -49,26 +57,39 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
     });
   }, [search, category]);
 
-  const grouped = useMemo(() => {
-    return CATEGORY_ORDER.map((cat) => ({
-      category: cat,
-      items: filtered.filter((t) => t.category === cat),
-    })).filter((g) => g.items.length > 0);
+  const orderedTemplates = useMemo(() => {
+    return CATEGORY_ORDER.flatMap((cat) => filtered.filter((t) => t.category === cat));
   }, [filtered]);
 
   const isBlankSelected = selectedTemplateId === null || selectedTemplateId === 'blank';
+  const selectedTemplate = !isBlankSelected
+    ? policyTemplates.find((t) => t.id === selectedTemplateId) ?? null
+    : null;
+  const selectedDataListItemId = isBlankSelected
+    ? 'template-blank'
+    : selectedTemplate
+      ? `template-${selectedTemplate.id}`
+      : 'template-blank';
 
-  const handleSelectBlank = () => {
-    onSelectBlank();
-  };
-
-  const handleSelectTemplate = (_event: React.MouseEvent | React.KeyboardEvent, id: string) => {
+  const handleSelect = (_event: React.MouseEvent | React.KeyboardEvent, id: string) => {
+    if (id === 'template-blank') {
+      onSelectBlank();
+      return;
+    }
     const templateId = id.replace(/^template-/, '');
     const template = policyTemplates.find((t) => t.id === templateId);
     if (template) {
       onSelectTemplate(template);
     }
   };
+
+  const detailTitle = isBlankSelected ? 'Blank policy' : (selectedTemplate?.name ?? 'Blank policy');
+  const detailDescription = isBlankSelected
+    ? BLANK_DESCRIPTION
+    : (selectedTemplate?.description ?? BLANK_DESCRIPTION);
+  const detailNotes = isBlankSelected ? undefined : selectedTemplate?.notes;
+  const detailCategory =
+    !isBlankSelected && selectedTemplate ? CATEGORY_LABELS[selectedTemplate.category] : null;
 
   return (
     <div>
@@ -78,8 +99,8 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
       <FormHelperText style={{ marginBottom: '1rem' }}>
         <HelperText>
           <HelperTextItem>
-            Start from a blank policy or pick a built-in template.
-            Replace any <code>PLACEHOLDER_*</code> values before applying.
+            Start from a blank policy or pick a built-in template. Replace any{' '}
+            <code>PLACEHOLDER_*</code> values before applying.
           </HelperTextItem>
         </HelperText>
       </FormHelperText>
@@ -97,106 +118,105 @@ export function TemplateStep({ selectedTemplateId, onSelectBlank, onSelectTempla
             />
           </ToolbarItem>
           <ToolbarItem>
-            <div className="template-category-filters" role="group" aria-label="Template categories">
-              <Label
-                color={category === 'all' ? 'blue' : 'grey'}
-                onClick={() => setCategory('all')}
-                style={{ cursor: 'pointer', marginRight: '0.5rem' }}
-              >
-                All
-              </Label>
+            <ToggleGroup isCompact aria-label="Template categories">
+              <ToggleGroupItem
+                text="All"
+                buttonId="template-category-all"
+                isSelected={category === 'all'}
+                onChange={() => setCategory('all')}
+              />
               {CATEGORY_ORDER.map((cat) => (
-                <Label
+                <ToggleGroupItem
                   key={cat}
-                  color={category === cat ? 'blue' : 'grey'}
-                  onClick={() => setCategory(cat)}
-                  style={{ cursor: 'pointer', marginRight: '0.5rem' }}
-                >
-                  {CATEGORY_LABELS[cat]}
-                </Label>
+                  text={CATEGORY_LABELS[cat]}
+                  buttonId={`template-category-${cat}`}
+                  isSelected={category === cat}
+                  onChange={() => setCategory(cat)}
+                />
               ))}
-            </div>
+            </ToggleGroup>
           </ToolbarItem>
         </ToolbarContent>
       </Toolbar>
 
-      {/* Blank policy - always shown */}
-      <DataList
-        aria-label="Blank policy"
-        isCompact
-        selectedDataListItemId={isBlankSelected ? 'template-blank' : ''}
-        onSelectDataListItem={handleSelectBlank}
-      >
-        <DataListItem id="template-blank" aria-labelledby="template-blank-title">
-          <DataListItemRow>
-            <DataListItemCells
-              dataListCells={[
-                <DataListCell key="name" width={2}>
-                  <strong id="template-blank-title">Blank policy</strong>
-                </DataListCell>,
-                <DataListCell key="desc" width={5}>
-                  Start from scratch — paste or upload your own manifests.
-                </DataListCell>,
-              ]}
-            />
-          </DataListItemRow>
-        </DataListItem>
-      </DataList>
-
-      {/* Category groups */}
-      {grouped.map((group) => (
-        <div key={group.category} style={{ marginTop: '1.5rem' }}>
-          <Title headingLevel="h3" size="md" style={{ marginBottom: '0.5rem' }}>
-            {CATEGORY_LABELS[group.category]}
-          </Title>
-          <DataList
-            aria-label={`${CATEGORY_LABELS[group.category]} templates`}
-            isCompact
-            selectedDataListItemId={
-              group.items.some((t) => t.id === selectedTemplateId)
-                ? `template-${selectedTemplateId}`
-                : ''
-            }
-            onSelectDataListItem={handleSelectTemplate}
-          >
-            {group.items.map((template) => (
-              <DataListItem
-                key={template.id}
-                id={`template-${template.id}`}
-                aria-labelledby={`template-${template.id}-title`}
-              >
+      <Grid hasGutter>
+        <GridItem md={5} sm={12}>
+          <div className="template-primary-list">
+            <DataList
+              aria-label="Policy templates"
+              isCompact
+              selectedDataListItemId={selectedDataListItemId}
+              onSelectDataListItem={handleSelect}
+            >
+              <DataListItem id="template-blank" aria-labelledby="template-blank-title">
                 <DataListItemRow>
                   <DataListItemCells
                     dataListCells={[
-                      <DataListCell key="name" width={2}>
-                        <strong id={`template-${template.id}-title`}>{template.name}</strong>
-                      </DataListCell>,
-                      <DataListCell key="desc" width={5}>
-                        {template.description}
-                        {template.notes && template.notes.length > 0 && (
-                          <HelperText style={{ marginTop: '0.25rem' }}>
-                            {template.notes.map((note) => (
-                              <HelperTextItem key={note} variant="indeterminate">
-                                {note}
-                              </HelperTextItem>
-                            ))}
-                          </HelperText>
-                        )}
+                      <DataListCell key="name">
+                        <strong id="template-blank-title">Blank policy</strong>
                       </DataListCell>,
                     ]}
                   />
                 </DataListItemRow>
               </DataListItem>
-            ))}
-          </DataList>
-        </div>
-      ))}
+              {orderedTemplates.map((template) => (
+                <DataListItem
+                  key={template.id}
+                  id={`template-${template.id}`}
+                  aria-labelledby={`template-${template.id}-title`}
+                >
+                  <DataListItemRow>
+                    <DataListItemCells
+                      dataListCells={[
+                        <DataListCell key="name">
+                          <strong id={`template-${template.id}-title`}>{template.name}</strong>
+                          {category === 'all' && (
+                            <Label
+                              isCompact
+                              color="grey"
+                              style={{ marginLeft: '0.5rem' }}
+                            >
+                              {CATEGORY_LABELS[template.category]}
+                            </Label>
+                          )}
+                        </DataListCell>,
+                      ]}
+                    />
+                  </DataListItemRow>
+                </DataListItem>
+              ))}
+            </DataList>
+          </div>
+          {filtered.length === 0 && (
+            <HelperText style={{ marginTop: '0.75rem' }}>
+              <HelperTextItem>No templates match your search.</HelperTextItem>
+            </HelperText>
+          )}
+        </GridItem>
 
-      {filtered.length === 0 && (
-        <HelperText style={{ marginTop: '1rem' }}>
-          <HelperTextItem>No templates match your search.</HelperTextItem>
-        </HelperText>
-      )}
+        <GridItem md={7} sm={12}>
+          <div className="template-detail-pane">
+            <Title headingLevel="h3" size="lg" style={{ marginBottom: '0.5rem' }}>
+              {detailTitle}
+            </Title>
+            {detailCategory && (
+              <Label isCompact color="blue" style={{ marginBottom: '0.75rem' }}>
+                {detailCategory}
+              </Label>
+            )}
+            <Content component={ContentVariants.p}>{detailDescription}</Content>
+            {detailNotes && detailNotes.length > 0 && (
+              <HelperText style={{ marginTop: '0.75rem' }}>
+                {detailNotes.map((note) => (
+                  <HelperTextItem key={note} variant="indeterminate">
+                    {note}
+                  </HelperTextItem>
+                ))}
+              </HelperText>
+            )}
+          </div>
+        </GridItem>
+      </Grid>
     </div>
   );
 }

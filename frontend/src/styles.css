@@ -25,9 +25,45 @@ body {
 .policy-radio-options {
   display: flex;
   flex-direction: column;
-  row-gap: var(--pf-t--global--spacer--sm);
+  row-gap: var(--pf-t--global--spacer--md);
 }
 
 .policy-radio-options .pf-v6-c-radio {
   grid-template-columns: var(--pf-t--global--font--size--body--default) 1fr;
+}
+
+.template-primary-list {
+  max-height: 28rem;
+  overflow: auto;
+  border: var(--pf-t--global--border--width--regular) solid
+    var(--pf-t--global--border--color--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+}
+
+.template-detail-pane {
+  min-height: 12rem;
+  padding: var(--pf-t--global--spacer--md);
+  border: var(--pf-t--global--border--width--regular) solid
+    var(--pf-t--global--border--color--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+  background-color: var(--pf-t--global--background--color--secondary--default);
+}
+
+/* Match PF TextArea vertical resize: drag the bottom-right grip to grow/shrink. */
+.yaml-editor-resizable {
+  resize: vertical;
+  overflow: auto;
+  min-height: 12rem;
+  max-height: 80vh;
+  border: var(--pf-t--global--border--width--regular) solid
+    var(--pf-t--global--border--color--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+}
+
+.yaml-editor-resizable .pf-v6-c-code-editor,
+.yaml-editor-resizable .pf-v6-c-code-editor__main,
+.yaml-editor-resizable .monaco-editor {
+  height: 100% !important;
+  border: none;
+  border-radius: 0;
 }
