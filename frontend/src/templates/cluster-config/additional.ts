@@ -61,7 +61,7 @@ spec:
     notes: [
       'Replace PLACEHOLDER_IDMS_NAME, PLACEHOLDER_SOURCE_REGISTRY, and PLACEHOLDER_MIRROR_REGISTRY.',
       'Add more imageDigestMirrors entries for additional source/mirror pairs.',
-      'Use NeverContactSource instead of AllowContactingSource for fully disconnected clusters.',
+      'Optionally add mirrorSourcePolicy (for example NeverContactSource for disconnected clusters).',
       'Add multiple IDMS manifests in one ConfigurationPolicy when they share the same compliance settings.',
     ],
     manifests: [
@@ -75,8 +75,7 @@ spec:
   imageDigestMirrors:
     - source: PLACEHOLDER_SOURCE_REGISTRY
       mirrors:
-        - PLACEHOLDER_MIRROR_REGISTRY
-      mirrorSourcePolicy: AllowContactingSource`,
+        - PLACEHOLDER_MIRROR_REGISTRY`,
       },
     ],
   },
@@ -109,8 +108,7 @@ spec:
   imageTagMirrors:
     - source: PLACEHOLDER_SOURCE_REGISTRY
       mirrors:
-        - PLACEHOLDER_MIRROR_REGISTRY
-      mirrorSourcePolicy: AllowContactingSource`,
+        - PLACEHOLDER_MIRROR_REGISTRY`,
       },
     ],
   },
