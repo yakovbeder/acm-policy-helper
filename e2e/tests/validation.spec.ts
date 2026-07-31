@@ -7,13 +7,16 @@ import {
 } from './helpers';
 
 test.describe('Wizard validation and error paths', () => {
-  test('disables generate when there are no manifests', async ({ page }) => {
+  test('disables Generate and Regenerate when there are no manifests', async ({ page }) => {
     await page.goto('/');
     await continueFromTemplateStep(page);
     await fillPolicySettings(page, { name: 'e2e-no-manifests' });
     await page.getByRole('button', { name: 'Manifests' }).click();
     await expect(page.getByText('No manifests added yet')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Generate' })).toBeDisabled();
+
+    await page.getByRole('button', { name: 'Review & apply' }).click();
+    await expect(page.getByRole('button', { name: 'Regenerate' })).toBeDisabled();
   });
 
   test('blocks generate when policy name and namespace are missing', async ({ page }) => {
