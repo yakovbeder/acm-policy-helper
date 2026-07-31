@@ -14,11 +14,22 @@ Deployed on OpenShift behind an official OAuth proxy so visiting the Route prese
 ## Features
 
 - PatternFly v6 wizard matching ACM Governance policy fields
+- Built-in template gallery (operators and cluster config)
 - Paste YAML or upload `.yaml` / `.yml` files
 - Inline YAML linting in the editor
 - Dark / light theme toggle
 - Download generated YAML or apply it to the hub cluster
 - Red Hat UBI 9 Node.js container image
+
+## Policy templates
+
+Built-in templates are curated starter manifests bundled with the app. They were adapted from public policy collections:
+
+- [bry-tam/acm-policy-samples](https://github.com/bry-tam/acm-policy-samples)
+- [open-cluster-management-io/policy-collection](https://github.com/open-cluster-management-io/policy-collection)
+- [ch-stark/etcd-backup-policy](https://github.com/ch-stark/etcd-backup-policy)
+
+Templates are install- or config-focused starters. Review and adjust names, placement, channels, and any site-specific values before applying to a cluster.
 
 ## Architecture
 
@@ -36,7 +47,7 @@ Requires `oc` logged into a cluster that can pull:
 
 ### Image versioning
 
-Container tags follow the root [`package.json`](package.json) `version` field (for example `1.1.0`). Release flow:
+Container tags follow the root [`package.json`](package.json) `version` field (for example `1.2.0`). Release flow:
 
 1. Bump `version` in the root `package.json` when you cut a release
 2. Build and push `:version` and `:latest`: `./scripts/build-push.sh` (or `npm run image:build-push`)
@@ -140,6 +151,11 @@ npm test
 npm run build
 npm run install:browsers -w e2e
 POLICY_GENERATOR_BIN="$PWD/e2e/bin/PolicyGenerator" npm run test:e2e
+
+# Optional: generate + apply every built-in template to a live hub (disabled/inform)
+# Requires `oc` login (e.g. ocp4) and PolicyGenerator
+npm run download:pg
+npm run test:cluster
 ```
 
 ### Local API endpoints

@@ -111,6 +111,7 @@ export function PolicySettingsStep({ form, onChange }: Props) {
         <SelectField
           id="compliance-type"
           value={form.complianceType}
+          isDisabled={!form.consolidateManifests}
           onChange={(v) =>
             onChange({ complianceType: v as PolicyFormState['complianceType'] })
           }
@@ -123,8 +124,9 @@ export function PolicySettingsStep({ form, onChange }: Props) {
         <FormHelperText>
           <HelperText>
             <HelperTextItem>
-              Default for all manifests. When separate ConfigurationPolicies are enabled, each
-              manifest can override this.
+              {form.consolidateManifests
+                ? 'Default for all manifests. When separate ConfigurationPolicies are enabled, each manifest can override this.'
+                : 'Disabled because each manifest sets its own compliance type in the Manifests step.'}
             </HelperTextItem>
           </HelperText>
         </FormHelperText>
@@ -147,6 +149,7 @@ export function PolicySettingsStep({ form, onChange }: Props) {
             <HelperTextItem>
               Turn on to generate one ConfigurationPolicy template per manifest (different names
               and compliance types). Leave off to wrap all manifests in a single ConfigurationPolicy.
+              Separate mode disables the global compliance type above.
             </HelperTextItem>
           </HelperText>
         </FormHelperText>

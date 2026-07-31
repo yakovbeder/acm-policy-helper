@@ -1,6 +1,6 @@
 {
   "name": "acm-policy-helper",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "UI tool to generate ACM Configuration Policies from YAML manifests using PolicyGenerator",
   "scripts": {
@@ -11,6 +11,7 @@
     "test": "npm run test -w backend && npm run test -w frontend",
     "test:unit": "npm run test",
     "test:e2e": "npm run test -w e2e",
+    "test:cluster": "RUN_CLUSTER_TESTS=1 POLICY_GENERATOR_BIN=\"${POLICY_GENERATOR_BIN:-$PWD/e2e/bin/PolicyGenerator}\" npm run test -w backend -- tests/template-deploy.cluster.test.ts",
     "test:all": "npm run test && npm run test:e2e",
     "download:pg": "bash scripts/download-policy-generator.sh e2e/bin",
     "image:build-push": "bash scripts/build-push.sh",

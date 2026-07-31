@@ -13,11 +13,13 @@ import {
 } from '@patternfly/react-core';
 import { fetchPolicy, fetchPolicyBundle, generatePolicy } from '../../services/api';
 import { hydrateFormFromPolicyBundle } from '../../services/policyHydrate';
+import { formFromTemplate, type PolicyTemplate } from '../../templates';
 import { defaultFormState, type PolicyFormState } from '../../types';
 import { ManifestsStep } from './ManifestsStep';
 import { PlacementStep } from './PlacementStep';
 import { PolicySettingsStep } from './PolicySettingsStep';
 import { ReviewStep } from './ReviewStep';
+import { TemplateStep } from './TemplateStep';
 
 interface Props {
   isDark: boolean;
@@ -76,6 +78,7 @@ type EditMode = 'create' | 'edit';
 
 export function PolicyWizard({ isDark }: Props) {
   const [form, setForm] = useState<PolicyFormState>(defaultFormState);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>('blank');
   const [generatedYaml, setGeneratedYaml] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -95,6 +98,26 @@ export function PolicyWizard({ isDark }: Props) {
       setEditMode('create');
       setHydrateWarnings([]);
     }
+  };
+
+  const onSelectBlank = () => {
+    setSelectedTemplateId('blank');
+    setForm(defaultFormState());
+    setEditMode('create');
+    setHydrateWarnings([]);
+    setGeneratedYaml('');
+    setGenerateError(null);
+    setStepError(null);
+  };
+
+  const onSelectTemplate = (template: PolicyTemplate) => {
+    setSelectedTemplateId(template.id);
+    setForm(formFromTemplate(template));
+    setEditMode('create');
+    setHydrateWarnings([]);
+    setGeneratedYaml('');
+    setGenerateError(null);
+    setStepError(null);
   };
 
   const runGenerate = async (): Promise<boolean> => {
@@ -230,6 +253,14 @@ export function PolicyWizard({ isDark }: Props) {
       </Modal>
 
       <Wizard isVisitRequired height="100%">
+        <WizardStep id="templates" name="Template" footer={<StepFooter />}>
+          <TemplateStep
+            selectedTemplateId={selectedTemplateId}
+            onSelectBlank={onSelectBlank}
+            onSelectTemplate={onSelectTemplate}
+          />
+        </WizardStep>
+
         <WizardStep
           id="settings"
           name="Policy settings"

@@ -8,6 +8,7 @@ interface SelectFieldProps {
   options: { value: string; label: string }[];
   'aria-label'?: string;
   placeholder?: string;
+  isDisabled?: boolean;
 }
 
 export function SelectField({
@@ -17,6 +18,7 @@ export function SelectField({
   options,
   'aria-label': ariaLabel,
   placeholder = 'Select a value',
+  isDisabled = false,
 }: SelectFieldProps) {
   const initialOptions = useMemo(
     (): SimpleSelectOption[] =>
@@ -33,6 +35,7 @@ export function SelectField({
       id={id}
       initialOptions={initialOptions}
       placeholder={placeholder}
+      isDisabled={isDisabled}
       onSelect={(_e, selection) => {
         if (selection !== undefined && selection !== null) {
           onChange(String(selection));
@@ -43,6 +46,7 @@ export function SelectField({
         id,
         'aria-label': ariaLabel || id,
         isFullWidth: true,
+        isDisabled,
       }}
     />
   );
