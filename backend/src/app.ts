@@ -17,8 +17,13 @@ import { listNamespaces } from './services/kubeClient.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DEFAULT_TIMEOUT_MS = 30_000;
-const APPLY_TIMEOUT_MS = 60_000;
+export const DEFAULT_TIMEOUT_MS = 30_000;
+export const APPLY_TIMEOUT_MS = 60_000;
+
+/** Request timeout for a path: apply gets a longer window for multi-doc bundles. */
+export function requestTimeoutMs(pathname: string): number {
+  return pathname.startsWith('/api/apply') ? APPLY_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+}
 
 export const app = express();
 
@@ -28,7 +33,7 @@ if (corsOrigin) {
 }
 
 app.use((req: Request, res: Response, next: NextFunction) => {
-  const timeoutMs = req.path.startsWith('/api/apply') ? APPLY_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+  const timeoutMs = requestTimeoutMs(req.path);
   req.setTimeout(timeoutMs);
   res.setTimeout(timeoutMs, () => {
     if (!res.headersSent) {

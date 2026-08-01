@@ -58,6 +58,27 @@ describe('POST /api/generate', () => {
     expect(generatePolicyYaml).not.toHaveBeenCalled();
   });
 
+  it('rejects invalid policyName before calling the generator', async () => {
+    const res = await request(app)
+      .post('/api/generate')
+      .send({ ...validBody, policyName: 'Bad_Name!' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+    expect(
+      res.body.details.some((d: { field: string }) => d.field === 'policyName')
+    ).toBe(true);
+    expect(generatePolicyYaml).not.toHaveBeenCalled();
+  });
+
+  it('rejects empty manifests before calling the generator', async () => {
+    const res = await request(app)
+      .post('/api/generate')
+      .send({ ...validBody, manifests: [] });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+    expect(generatePolicyYaml).not.toHaveBeenCalled();
+  });
+
   it('returns 400 on generator errors', async () => {
     vi.mocked(generatePolicyYaml).mockRejectedValueOnce(new Error('policyName is required'));
     const res = await request(app).post('/api/generate').send(validBody);

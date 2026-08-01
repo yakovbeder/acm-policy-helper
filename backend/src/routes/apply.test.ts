@@ -36,6 +36,13 @@ describe('POST /api/apply', () => {
     expect(res.body.details.some((d: { field: string }) => d.field === 'yaml')).toBe(true);
   });
 
+  it('rejects whitespace-only yaml', async () => {
+    const res = await request(app).post('/api/apply').send({ yaml: '  \n  ' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+    expect(applyYaml).not.toHaveBeenCalled();
+  });
+
   it('applies yaml and returns results', async () => {
     const res = await request(app)
       .post('/api/apply')

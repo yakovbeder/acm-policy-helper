@@ -58,6 +58,14 @@ describe('GET /api/policies/:namespace/:name', () => {
     expect(res.status).toBe(404);
     expect(res.body.error).toMatch(/not found/i);
   });
+
+  it('returns a generic 500 message without leaking internals', async () => {
+    vi.mocked(getPolicy).mockRejectedValueOnce(new Error('ECONNREFUSED api-server.internal:6443'));
+    const res = await request(makeApp()).get('/api/policies/policies/demo');
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to get policy');
+    expect(JSON.stringify(res.body)).not.toMatch(/ECONNREFUSED|api-server\.internal/);
+  });
 });
 
 describe('GET /api/policies/:namespace/:name/bundle', () => {
@@ -67,5 +75,15 @@ describe('GET /api/policies/:namespace/:name/bundle', () => {
     expect(res.body.policy.metadata.name).toBe('demo');
     expect(res.body.placement.kind).toBe('Placement');
     expect(getPolicyBundle).toHaveBeenCalledWith('policies', 'demo');
+  });
+
+  it('returns a generic 500 message for bundle failures', async () => {
+    vi.mocked(getPolicyBundle).mockRejectedValueOnce(
+      new Error('token expired at /var/run/secrets/kubernetes.io/serviceaccount/token')
+    );
+    const res = await request(makeApp()).get('/api/policies/policies/demo/bundle');
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to get policy bundle');
+    expect(JSON.stringify(res.body)).not.toMatch(/token expired|serviceaccount/);
   });
 });

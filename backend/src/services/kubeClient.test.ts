@@ -9,12 +9,17 @@ const customApi = {
   createClusterCustomObject: vi.fn(),
 };
 
+const kubeConfigConstructed = vi.hoisted(() => ({ count: 0 }));
+
 vi.mock('@kubernetes/client-node', () => {
   class KubeConfig {
     loadFromCluster = vi.fn();
     loadFromFile = vi.fn();
     loadFromDefault = vi.fn();
     makeApiClient = vi.fn(() => customApi);
+    constructor() {
+      kubeConfigConstructed.count += 1;
+    }
   }
   return {
     KubeConfig,
@@ -146,6 +151,22 @@ describe('applyYaml', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetKubeConfigCache();
+    kubeConfigConstructed.count = 0;
+  });
+
+  it('caches KubeConfig across apply calls', async () => {
+    customApi.getNamespacedCustomObject.mockRejectedValue({ statusCode: 404 });
+    customApi.createNamespacedCustomObject.mockResolvedValue({});
+    const yaml = `
+apiVersion: policy.open-cluster-management.io/v1
+kind: Policy
+metadata:
+  name: demo
+  namespace: policies
+`;
+    await applyYaml(yaml);
+    await applyYaml(yaml);
+    expect(kubeConfigConstructed.count).toBe(1);
   });
 
   it('rejects empty YAML', async () => {

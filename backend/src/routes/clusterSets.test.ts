@@ -29,9 +29,13 @@ describe('GET /api/cluster-sets', () => {
   });
 
   it('returns 500 with empty list on kube errors', async () => {
-    vi.mocked(listManagedClusterSets).mockRejectedValueOnce(new Error('forbidden'));
+    vi.mocked(listManagedClusterSets).mockRejectedValueOnce(
+      new Error('User "system:serviceaccount:x" cannot list resource')
+    );
     const res = await request(app).get('/api/cluster-sets');
     expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to list ManagedClusterSets');
     expect(res.body.clusterSets).toEqual([]);
+    expect(JSON.stringify(res.body)).not.toMatch(/system:serviceaccount/);
   });
 });
