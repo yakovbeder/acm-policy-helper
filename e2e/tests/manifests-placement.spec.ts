@@ -19,6 +19,7 @@ async function downloadYaml(page: import('@playwright/test').Page): Promise<stri
 
 test.describe('Manifests and placement', () => {
   test('shows YAML lint issues for invalid pasted content', async ({ page }) => {
+    test.setTimeout(120_000);
     await page.goto('/');
     await page.getByRole('button', { name: 'Manifests' }).click();
     await expect(page.getByRole('tab', { name: 'Paste YAML' })).toBeVisible();

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { CodeEditor, Language } from '@patternfly/react-code-editor';
 import type { editor } from 'monaco-editor';
+import '../monaco/setupMonaco';
 import {
   defineOpenShiftYamlThemes,
   openshiftYamlThemeName,
