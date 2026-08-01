@@ -6,6 +6,10 @@ updates:
       interval: weekly
       day: sunday
     open-pull-requests-limit: 20
+    # Keep in sync with PatternFly CodeEditor / @monaco-editor/react (currently 0.52).
+    ignore:
+      - dependency-name: monaco-editor
+      - dependency-name: react-monaco-editor
     groups:
       npm-minor-patch:
         patterns:
