@@ -188,7 +188,20 @@ export function PolicyWizard({ isDark }: Props) {
     try {
       const bundle = await fetchPolicyBundle(form.namespace.trim(), form.policyName.trim());
       const hydrated = hydrateFormFromPolicyBundle(bundle);
-      setForm(hydrated.form);
+      // Keep Policy settings already chosen in the wizard. Fetch is for hub manifests/placement;
+      // replacing the whole form was wiping toggles like disabled before Generate.
+      setForm({
+        ...hydrated.form,
+        disabled: form.disabled,
+        remediationAction: form.remediationAction,
+        severity: form.severity,
+        description: form.description,
+        pruneObjectBehavior: form.pruneObjectBehavior,
+        standards: form.standards,
+        categories: form.categories,
+        controls: form.controls,
+        complianceType: form.complianceType,
+      });
       setHydrateWarnings(hydrated.warnings);
       setEditMode('edit');
       setGeneratedYaml('');
