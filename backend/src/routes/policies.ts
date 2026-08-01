@@ -7,7 +7,7 @@ import {
 
 const router = Router();
 
-router.get('/:namespace/:name/bundle', async (req: Request, res: Response) => {
+router.get('/:namespace/:name/bundle', async (req: Request<{ namespace: string; name: string }>, res: Response) => {
   try {
     const { namespace, name } = req.params;
     const bundle = await getPolicyBundle(namespace, name);
@@ -23,7 +23,7 @@ router.get('/:namespace/:name/bundle', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/:namespace/:name', async (req: Request, res: Response) => {
+router.get('/:namespace/:name', async (req: Request<{ namespace: string; name: string }>, res: Response) => {
   try {
     const { namespace, name } = req.params;
     const policy = await getPolicy(namespace, name);

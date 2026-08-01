@@ -39,7 +39,8 @@ app.use('/api/policies', policiesRouter);
 
 const publicDir = process.env.PUBLIC_DIR || path.join(__dirname, '../public');
 app.use(express.static(publicDir));
-app.get('*', (req, res, next) => {
+// Express 5 / path-to-regexp: bare '*' is invalid; use a named wildcard.
+app.get('/{*path}', (req, res, next) => {
   if (req.path.startsWith('/api')) {
     next();
     return;
