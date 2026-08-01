@@ -8,6 +8,10 @@ vi.mock('../services/kubeClient.js', () => ({
   ),
 }));
 
+vi.mock('../logger.js', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+
 import consoleUrlRouter from './consoleUrl.js';
 import { getConsoleUrl } from '../services/kubeClient.js';
 
@@ -39,7 +43,7 @@ describe('GET /api/console-url', () => {
     vi.mocked(getConsoleUrl).mockRejectedValueOnce(new Error('forbidden'));
     const res = await request(app).get('/api/console-url');
     expect(res.status).toBe(500);
-    expect(res.body.error).toMatch(/forbidden/i);
+    expect(res.body.error).toBe('Failed to get console URL');
     expect(res.body.consoleUrl).toBeNull();
   });
 });

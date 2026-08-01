@@ -1,5 +1,6 @@
 import * as k8s from '@kubernetes/client-node';
 import { loadAll } from 'js-yaml';
+import { logger } from '../logger.js';
 import type { ApplyResult } from '../types.js';
 
 interface KubeObject {
@@ -13,6 +14,17 @@ interface KubeObject {
   [key: string]: unknown;
 }
 
+/** Kinds this tool is designed to apply. Unknown kinds are rejected. */
+export const ALLOWED_APPLY_KINDS = new Set([
+  'Policy',
+  'Placement',
+  'PlacementBinding',
+  'ManagedClusterSetBinding',
+  'ConfigurationPolicy',
+]);
+
+const MAX_APPLY_DOCUMENTS = 50;
+
 function parseApiVersion(apiVersion: string): { group: string; version: string } {
   if (!apiVersion.includes('/')) {
     return { group: '', version: apiVersion };
@@ -21,7 +33,11 @@ function parseApiVersion(apiVersion: string): { group: string; version: string }
   return { group, version };
 }
 
-function pluralizeKind(kind: string): string {
+/**
+ * Best-effort pluralization for known ACM kinds.
+ * Falls back to English-ish heuristics for others; prefer API discovery if expanding beyond this set.
+ */
+export function pluralizeKind(kind: string): string {
   const irregular: Record<string, string> = {
     Policy: 'policies',
     Placement: 'placements',
@@ -47,28 +63,37 @@ function isClusterCatalogDisabled(): boolean {
   return flag === '1' || flag === 'true';
 }
 
+let _cachedKc: k8s.KubeConfig | null = null;
+
 function getKubeConfig(): k8s.KubeConfig {
+  if (_cachedKc) {
+    return _cachedKc;
+  }
   const kc = new k8s.KubeConfig();
   // In-cluster service account (OpenShift / Kubernetes pods)
   if (process.env.KUBERNETES_SERVICE_HOST) {
     kc.loadFromCluster();
-    return kc;
-  }
-  // Explicit kubeconfig path for local development
-  if (process.env.KUBECONFIG) {
+  } else if (process.env.KUBECONFIG) {
+    // Explicit kubeconfig path for local development
     kc.loadFromFile(process.env.KUBECONFIG);
-    return kc;
+  } else {
+    kc.loadFromDefault();
   }
-  kc.loadFromDefault();
+  _cachedKc = kc;
   return kc;
 }
 
-function getHttpStatus(err: unknown): number | undefined {
+/** Test helper to clear the module-level KubeConfig cache. */
+export function resetKubeConfigCache(): void {
+  _cachedKc = null;
+}
+
+export function getHttpStatus(err: unknown): number | undefined {
   const e = err as { code?: number; statusCode?: number; response?: { statusCode?: number } };
   return e.code ?? e.statusCode ?? e.response?.statusCode;
 }
 
-async function applyObject(
+export async function applyObject(
   customApi: k8s.CustomObjectsApi,
   obj: KubeObject
 ): Promise<ApplyResult> {
@@ -88,7 +113,7 @@ async function applyObject(
     };
   }
 
-    try {
+  try {
     if (namespace) {
       try {
         const existing = (await customApi.getNamespacedCustomObject({
@@ -159,6 +184,7 @@ async function applyObject(
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
+    logger.error({ err, kind, name, namespace }, 'Apply object failed');
     return { kind, name, namespace, status: 'error', message };
   }
 }
@@ -439,11 +465,27 @@ export async function applyYaml(yamlContent: string): Promise<ApplyResult[]> {
     throw new Error('No Kubernetes resources found in YAML');
   }
 
+  if (docs.length > MAX_APPLY_DOCUMENTS) {
+    throw new Error(
+      `Too many resources in YAML (max ${MAX_APPLY_DOCUMENTS}, got ${docs.length})`
+    );
+  }
+
   const kc = getKubeConfig();
   const customApi = kc.makeApiClient(k8s.CustomObjectsApi);
   const results: ApplyResult[] = [];
 
   for (const doc of docs) {
+    if (!ALLOWED_APPLY_KINDS.has(doc.kind)) {
+      results.push({
+        kind: doc.kind,
+        name: doc.metadata?.name || 'unknown',
+        namespace: doc.metadata?.namespace,
+        status: 'error',
+        message: `Kind "${doc.kind}" is not allowed. Permitted: ${[...ALLOWED_APPLY_KINDS].join(', ')}`,
+      });
+      continue;
+    }
     results.push(await applyObject(customApi, doc));
   }
 

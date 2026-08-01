@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import { logger } from '../logger.js';
 import { listManagedClusterSets } from '../services/kubeClient.js';
 
 const router = Router();
@@ -8,9 +9,8 @@ router.get('/', async (_req: Request, res: Response) => {
     const clusterSets = await listManagedClusterSets();
     res.json({ clusterSets });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('List ManagedClusterSets error:', message);
-    res.status(500).json({ error: message, clusterSets: [] });
+    logger.error({ err, route: 'GET /api/cluster-sets' }, 'List ManagedClusterSets error');
+    res.status(500).json({ error: 'Failed to list ManagedClusterSets', clusterSets: [] });
   }
 });
 

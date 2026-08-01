@@ -1,6 +1,6 @@
 {
   "name": "acm-policy-helper",
-  "version": "1.8.6",
+  "version": "1.9.0",
   "private": true,
   "description": "UI tool to generate ACM Configuration Policies from YAML manifests using PolicyGenerator",
   "scripts": {
@@ -31,5 +31,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "overrides": {
+    "tldts": "7.4.5",
+    "tldts-core": "7.4.5"
   }
 }

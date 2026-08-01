@@ -8,6 +8,15 @@ vi.mock('../services/kubeClient.js', () => ({
   ]),
 }));
 
+vi.mock('../logger.js', () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 import applyRouter from './apply.js';
 import { applyYaml } from '../services/kubeClient.js';
 
@@ -23,7 +32,15 @@ describe('POST /api/apply', () => {
   it('requires yaml', async () => {
     const res = await request(app).post('/api/apply').send({});
     expect(res.status).toBe(400);
-    expect(res.body.error).toMatch(/yaml/i);
+    expect(res.body.error).toBe('Validation failed');
+    expect(res.body.details.some((d: { field: string }) => d.field === 'yaml')).toBe(true);
+  });
+
+  it('rejects whitespace-only yaml', async () => {
+    const res = await request(app).post('/api/apply').send({ yaml: '  \n  ' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+    expect(applyYaml).not.toHaveBeenCalled();
   });
 
   it('applies yaml and returns results', async () => {

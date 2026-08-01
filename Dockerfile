@@ -16,6 +16,7 @@ COPY backend/package.json ./
 RUN npm install
 COPY backend/ ./
 RUN npm run build \
+  && npm prune --omit=dev \
   && chown -R 1001:0 /opt/app-root/src/backend/dist \
   && chown -R 1001:0 /opt/app-root/src/backend/node_modules
 

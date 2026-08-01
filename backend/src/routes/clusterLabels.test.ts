@@ -12,6 +12,10 @@ vi.mock('../services/kubeClient.js', () => ({
   })),
 }));
 
+vi.mock('../logger.js', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+
 import clusterLabelsRouter from './clusterLabels.js';
 import { listManagedClusterLabels } from '../services/kubeClient.js';
 
@@ -29,5 +33,16 @@ describe('GET /api/cluster-labels', () => {
     expect(res.body.keys).toEqual(['name', 'vendor']);
     expect(res.body.valuesByKey.vendor).toEqual(['OpenShift']);
     expect(listManagedClusterLabels).toHaveBeenCalledOnce();
+  });
+
+  it('returns a generic 500 without leaking kube details', async () => {
+    vi.mocked(listManagedClusterLabels).mockRejectedValueOnce(
+      new Error('Unauthorized: Bearer token invalid')
+    );
+    const res = await request(app).get('/api/cluster-labels');
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to list managed cluster labels');
+    expect(res.body.keys).toEqual([]);
+    expect(JSON.stringify(res.body)).not.toMatch(/Bearer|Unauthorized/i);
   });
 });
