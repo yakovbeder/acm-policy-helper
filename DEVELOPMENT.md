@@ -53,7 +53,7 @@ CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs unit + e2e on p
 
 ## Image versioning and release
 
-Current app version: **1.7.0** (root and workspace `package.json` fields must stay in sync).
+Current app version: **1.8.0** (root and workspace `package.json` fields must stay in sync).
 
 Container tags follow the root [`package.json`](package.json) `version` field. Every release also updates `:latest`.
 

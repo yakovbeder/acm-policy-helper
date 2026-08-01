@@ -5,6 +5,7 @@ import express from 'express';
 import applyRouter from './routes/apply.js';
 import clusterLabelsRouter from './routes/clusterLabels.js';
 import clusterSetsRouter from './routes/clusterSets.js';
+import consoleUrlRouter from './routes/consoleUrl.js';
 import generateRouter from './routes/generate.js';
 import namespacesRouter from './routes/namespaces.js';
 import placementTargetsRouter from './routes/placementTargets.js';
@@ -32,6 +33,7 @@ app.use('/api/apply', applyRouter);
 app.use('/api/namespaces', namespacesRouter);
 app.use('/api/cluster-sets', clusterSetsRouter);
 app.use('/api/cluster-labels', clusterLabelsRouter);
+app.use('/api/console-url', consoleUrlRouter);
 app.use('/api/placement-targets', placementTargetsRouter);
 app.use('/api/policies', policiesRouter);
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   AlertActionCloseButton,
@@ -10,16 +10,18 @@ import {
   Spinner,
 } from '@patternfly/react-core';
 import CheckCircleIcon from '@patternfly/react-icons/dist/esm/icons/check-circle-icon';
+import ExternalLinkAltIcon from '@patternfly/react-icons/dist/esm/icons/external-link-alt-icon';
 import DownloadIcon from '@patternfly/react-icons/dist/esm/icons/download-icon';
 import CopyIcon from '@patternfly/react-icons/dist/esm/icons/copy-icon';
 import UploadIcon from '@patternfly/react-icons/dist/esm/icons/upload-icon';
 import { LazyYamlEditor } from '../LazyYamlEditor';
-import { applyPolicy } from '../../services/api';
+import { applyPolicy, fetchConsoleUrl } from '../../services/api';
 import type { ApplyResult } from '../../types';
 
 interface Props {
   yaml: string;
   policyName: string;
+  namespace: string;
   isDark: boolean;
   isGenerating: boolean;
   generateError: string | null;
@@ -29,6 +31,7 @@ interface Props {
 export function ReviewStep({
   yaml,
   policyName,
+  namespace,
   isDark,
   isGenerating,
   generateError,
@@ -38,6 +41,11 @@ export function ReviewStep({
   const [applying, setApplying] = useState(false);
   const [applyResults, setApplyResults] = useState<ApplyResult[] | null>(null);
   const [applyError, setApplyError] = useState<string | null>(null);
+  const [consoleUrl, setConsoleUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchConsoleUrl().then(setConsoleUrl);
+  }, []);
 
   const download = () => {
     const blob = new Blob([yaml], { type: 'application/x-yaml' });
@@ -150,6 +158,21 @@ export function ReviewStep({
               </ListItem>
             ))}
           </List>
+          {!hasApplyErrors && consoleUrl && policyName && namespace && (
+            <Button
+              variant="link"
+              component="a"
+              href={`${consoleUrl}/multicloud/governance/policies/details/${encodeURIComponent(namespace)}/${encodeURIComponent(policyName)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              icon={<ExternalLinkAltIcon />}
+              iconPosition="end"
+              isInline
+              style={{ marginTop: '0.5rem' }}
+            >
+              View Policy in ACM
+            </Button>
+          )}
         </Alert>
       )}
 

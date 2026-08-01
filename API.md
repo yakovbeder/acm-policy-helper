@@ -15,6 +15,7 @@ Base URL (local): `http://localhost:8080`
 | `GET` | `/api/cluster-sets` | List ManagedClusterSets |
 | `GET` | `/api/cluster-labels` | List ManagedCluster label keys/values |
 | `GET` | `/api/placement-targets?namespace=` | Bound ManagedClusterSets + clusters for a namespace |
+| `GET` | `/api/console-url` | OpenShift console URL (for ACM links) |
 | `GET` | `/api/policies/:namespace/:name` | Get a Policy |
 | `GET` | `/api/policies/:namespace/:name/bundle` | Get Policy + Placement + PlacementBinding |
 
@@ -121,6 +122,16 @@ Lists `ManagedClusterSetBinding`s in the policy namespace and the ManagedCluster
 ```
 
 `400` if `namespace` is missing. On kube errors may return `500` with empty `clusterSets` / `clusters`.
+
+### `GET /api/console-url`
+
+Returns the OpenShift web console URL (read from `consoles.config.openshift.io/cluster`). Used to build "View Policy in ACM" links after apply.
+
+```json
+{ "consoleUrl": "https://console-openshift-console.apps.example.com" }
+```
+
+Returns `null` when the console URL cannot be determined.
 
 ### `GET /api/policies/:namespace/:name`
 

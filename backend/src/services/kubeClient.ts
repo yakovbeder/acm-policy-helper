@@ -414,6 +414,22 @@ export async function getPolicyBundle(
   };
 }
 
+export async function getConsoleUrl(): Promise<string | null> {
+  const kc = getKubeConfig();
+  const customApi = kc.makeApiClient(k8s.CustomObjectsApi);
+  try {
+    const console = (await customApi.getClusterCustomObject({
+      group: 'config.openshift.io',
+      version: 'v1',
+      plural: 'consoles',
+      name: 'cluster',
+    })) as { status?: { consoleURL?: string } };
+    return console.status?.consoleURL ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function applyYaml(yamlContent: string): Promise<ApplyResult[]> {
   const docs = (yaml.loadAll(yamlContent) as (KubeObject | null)[]).filter(
     (d): d is KubeObject => Boolean(d && typeof d === 'object' && d.kind)

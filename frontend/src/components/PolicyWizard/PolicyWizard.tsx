@@ -328,6 +328,7 @@ export function PolicyWizard({ isDark }: Props) {
           <ReviewStep
             yaml={generatedYaml}
             policyName={form.policyName}
+            namespace={form.namespace}
             isDark={isDark}
             isGenerating={isGenerating}
             generateError={generateError}

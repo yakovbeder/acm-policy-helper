@@ -106,6 +106,16 @@ export async function fetchPlacementTargets(namespace: string): Promise<Placemen
   };
 }
 
+export async function fetchConsoleUrl(): Promise<string | null> {
+  try {
+    const res = await fetch('/api/console-url');
+    const data = await res.json();
+    return (data.consoleUrl as string) || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchPolicy(
   namespace: string,
   name: string

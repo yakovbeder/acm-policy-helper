@@ -226,7 +226,41 @@ await page.waitForTimeout(1500);
 await ensureFooterVisible();
 await screenshot('04-manifests.png');
 
-// Generate → Review
+// Generate → Review (mock apply + console URL so the success link is visible)
+await page.route('**/api/console-url', async (route) => {
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      consoleUrl: 'https://console-openshift-console.apps.example.com',
+    }),
+  });
+});
+await page.route('**/api/apply', async (route) => {
+  const name = policyName || 'etcd-encryption';
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      results: [
+        { kind: 'Policy', name, namespace: 'policies', status: 'created' },
+        {
+          kind: 'Placement',
+          name: `placement-${name}`,
+          namespace: 'policies',
+          status: 'created',
+        },
+        {
+          kind: 'PlacementBinding',
+          name: `binding-${name}`,
+          namespace: 'policies',
+          status: 'created',
+        },
+      ],
+    }),
+  });
+});
+
 page.on('response', async (res) => {
   if (res.url().includes('/api/generate')) {
     console.log('Generate status:', res.status());
@@ -235,16 +269,10 @@ page.on('response', async (res) => {
 });
 
 await page.getByRole('button', { name: /^generate$/i }).click();
-await page.waitForTimeout(3000);
-if (!(await page.getByText(/download|copy|apply/i).count())) {
-  await page.getByRole('button', { name: /review/i }).first().click();
-  await page.waitForTimeout(500);
-  const regen = page.getByRole('button', { name: /regenerate/i });
-  if (await regen.count() > 0) {
-    await regen.click();
-    await page.waitForTimeout(2500);
-  }
-}
+await page.getByRole('button', { name: /download yaml/i }).waitFor({ timeout: 60000 });
+await page.getByRole('button', { name: /apply to cluster/i }).click();
+await page.getByText('Resources applied').waitFor({ timeout: 15000 });
+await page.getByRole('link', { name: /view policy in acm/i }).waitFor({ timeout: 5000 });
 await ensureFooterVisible();
 await screenshot('05-review.png');
 

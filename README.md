@@ -30,7 +30,7 @@ This creates the namespace and oauth-proxy secret (if needed), applies manifests
 Pin a specific tag when needed:
 
 ```bash
-IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:1.7.0 ./deploy/install.sh
+IMAGE=quay.io/rh-ee-ybeder/acm-policy-helper:1.8.0 ./deploy/install.sh
 ```
 
 ## Usage
@@ -65,6 +65,12 @@ Scroll down for prune behavior and compliance metadata (standards, categories, c
 
 ![Policy settings continued](docs/screenshots/02b-policy-settings-more.png)
 
+### Policy already exists
+
+When the name and namespace match a policy on the hub, choose whether to fetch and edit it or continue and overwrite on apply.
+
+![Policy exists](docs/screenshots/06-policy-exists.png)
+
 ### Placement
 
 Target clusters with label selectors (shown: `vendor=OpenShift`) or ManagedClusterSets.
@@ -83,15 +89,9 @@ Template manifests are loaded and editable; you can also paste or upload additio
 
 ### Review & apply
 
-Generated Policy / Placement / PlacementBinding — download, copy, or apply to the hub.
+Generated Policy / Placement / PlacementBinding — download, copy, or apply to the hub. On successful apply, a direct link to the policy in the ACM governance console is shown.
 
 ![Review](docs/screenshots/05-review.png)
-
-### Policy already exists
-
-When the name and namespace match a policy on the hub, choose whether to fetch and edit it or continue and overwrite on apply.
-
-![Policy exists](docs/screenshots/06-policy-exists.png)
 
 ## Compatibility
 
@@ -99,6 +99,7 @@ Compatible with ACM 2.15–2.17.
 
 ## Documentation
 
+- [ARCHITECTURE.md](ARCHITECTURE.md) — project structure, data flow, and where to change what
 - [DEVELOPMENT.md](DEVELOPMENT.md) — local development, tests, image build and versioning
 - [API.md](API.md) — HTTP API reference
 
