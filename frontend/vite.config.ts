@@ -23,7 +23,6 @@ export default defineConfig({
           }
           if (
             id.includes('monaco-editor') ||
-            id.includes('react-monaco-editor') ||
             id.includes('@patternfly/react-code-editor')
           ) {
             return 'monaco';
