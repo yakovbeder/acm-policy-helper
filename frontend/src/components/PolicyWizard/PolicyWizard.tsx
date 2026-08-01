@@ -93,7 +93,7 @@ export function PolicyWizard({ isDark }: Props) {
     setForm((prev) => ({ ...prev, ...patch }));
     setStepError(null);
     setGenerateError(null);
-    // Any wizard change invalidates the Review preview until Generate/Regenerate
+    // Any wizard change invalidates the Review preview until Generate
     setGeneratedYaml('');
     // Changing name/namespace leaves edit mode so existence can be re-checked
     if ('policyName' in patch || 'namespace' in patch) {
@@ -214,7 +214,7 @@ export function PolicyWizard({ isDark }: Props) {
           isInline
           style={{ marginBottom: '1rem' }}
         >
-          Add or change manifests, then regenerate and update on the cluster.
+          Add or change manifests, then generate and apply to the cluster.
           {hydrateWarnings.length > 0 && (
             <ul style={{ marginTop: '0.5rem' }}>
               {hydrateWarnings.map((w) => (
@@ -323,16 +323,7 @@ export function PolicyWizard({ isDark }: Props) {
         <WizardStep
           id="review"
           name="Review & apply"
-          footer={
-            <StepFooter
-              nextLabel="Regenerate"
-              isNextDisabled={form.manifests.length === 0}
-              onBeforeNext={async () => {
-                await runGenerate();
-                return false;
-              }}
-            />
-          }
+          footer={<StepFooter hideNext />}
         >
           <ReviewStep
             yaml={generatedYaml}

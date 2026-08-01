@@ -71,6 +71,10 @@ Target clusters with label selectors (shown: `vendor=OpenShift`) or ManagedClust
 
 ![Placement](docs/screenshots/03-placement.png)
 
+With no matchLabels or matchExpressions, Placement auto-detects bound cluster sets and shows the clusters that will be targeted.
+
+![Placement auto-detect](docs/screenshots/03b-placement-autodetect.png)
+
 ### Manifests
 
 Template manifests are loaded and editable; you can also paste or upload additional YAML.
