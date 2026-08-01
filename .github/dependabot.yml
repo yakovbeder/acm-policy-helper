@@ -9,6 +9,9 @@ updates:
     # Keep in sync with PatternFly CodeEditor / @monaco-editor/react (currently 0.52).
     ignore:
       - dependency-name: monaco-editor
+      - dependency-name: "@types/node"
+        update-types:
+          - "version-update:semver-major"
     groups:
       npm-minor-patch:
         patterns:
