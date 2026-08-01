@@ -25,7 +25,7 @@ Requires `oc` logged into a cluster. Images used (mirror these for disconnected 
 ./deploy/install.sh
 ```
 
-This creates the namespace and oauth-proxy secret (if needed), applies manifests, pulls `latest`, waits for rollout, and prints the Route URL.
+This creates the namespace and oauth-proxy secret (if needed), applies manifests, pulls `latest`, waits for rollout, creates an OpenShift `ConsoleLink` (Application launcher → Tools → ACM Policy Helper), and prints the Route URL.
 
 Pin a specific tag when needed:
 

@@ -33,9 +33,16 @@ oc rollout restart deployment/acm-policy-helper -n "${NAMESPACE}"
 echo "Waiting for rollout..."
 oc rollout status deployment/acm-policy-helper -n "${NAMESPACE}" --timeout=180s
 
+ROUTE_URL="$(oc get route acm-policy-helper -n "${NAMESPACE}" \
+  -o jsonpath='https://{.spec.host}')"
+
+echo "Creating ConsoleLink for ${ROUTE_URL}..."
+# href is cluster-specific; substitute before apply (ConsoleLink is cluster-scoped).
+sed "s|HREF_PLACEHOLDER|${ROUTE_URL}|g" "$(dirname "$0")/consolelink.yaml" | oc apply -f -
+
 echo
 echo "Route:"
-oc get route acm-policy-helper -n "${NAMESPACE}" \
-  -o jsonpath='https://{.spec.host}{"\n"}'
+echo "${ROUTE_URL}"
 echo
-echo "Open the Route URL. You will be redirected to the OpenShift OAuth login page."
+echo "Open the Route URL (or Application launcher → Tools → ACM Policy Helper)."
+echo "You will be redirected to the OpenShift OAuth login page."
