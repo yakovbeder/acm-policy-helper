@@ -15,31 +15,28 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    rollupOptions: {
+    // Vite 8 / Rolldown: replace deprecated rollupOptions.output.manualChunks.
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) {
-            return;
-          }
-          if (
-            id.includes('monaco-editor') ||
-            id.includes('@patternfly/react-code-editor')
-          ) {
-            return 'monaco';
-          }
-          if (id.includes('@patternfly')) {
-            return 'patternfly';
-          }
-          if (
-            id.includes('node_modules/react-dom') ||
-            id.includes('node_modules/react/') ||
-            id.includes('node_modules/scheduler')
-          ) {
-            return 'react-vendor';
-          }
+        codeSplitting: {
+          groups: [
+            // Claim shared vendors first; Rolldown recursively captures group
+            // dependencies, so later groups would otherwise swallow React.
+            {
+              name: 'react-vendor',
+              test: /node_modules[/\\](react-dom|react[/\\]|scheduler)/,
+            },
+            {
+              name: 'monaco',
+              test: /node_modules[/\\](monaco-editor|@patternfly[/\\]react-code-editor)/,
+            },
+            {
+              name: 'patternfly',
+              test: /node_modules[/\\]@patternfly/,
+            },
+          ],
         },
       },
     },
   },
 });
-
