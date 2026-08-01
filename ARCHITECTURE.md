@@ -125,7 +125,7 @@ Kube config: in-cluster if `KUBERNETES_SERVICE_HOST`, else `KUBECONFIG` / defaul
 | `route.yaml` | Reencrypt Route |
 | `consolelink.yaml` | Tools menu; `HREF_PLACEHOLDER` replaced at install |
 
-Default image: `quay.io/rh-ee-ybeder/acm-policy-helper:latest` (`imagePullPolicy: Always`). Pin with `IMAGE=...:1.8.5 ./deploy/install.sh`.
+Default image: `quay.io/rh-ee-ybeder/acm-policy-helper:latest` (`imagePullPolicy: Always`). Pin with `IMAGE=...:1.8.6 ./deploy/install.sh`.
 
 ## Scripts & tests
 
