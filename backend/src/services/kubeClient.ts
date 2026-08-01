@@ -1,5 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
-import yaml from 'js-yaml';
+import { loadAll } from 'js-yaml';
 import type { ApplyResult } from '../types.js';
 
 interface KubeObject {
@@ -431,7 +431,7 @@ export async function getConsoleUrl(): Promise<string | null> {
 }
 
 export async function applyYaml(yamlContent: string): Promise<ApplyResult[]> {
-  const docs = (yaml.loadAll(yamlContent) as (KubeObject | null)[]).filter(
+  const docs = (loadAll(yamlContent) as (KubeObject | null)[]).filter(
     (d): d is KubeObject => Boolean(d && typeof d === 'object' && d.kind)
   );
 

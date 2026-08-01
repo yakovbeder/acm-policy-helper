@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import yaml from 'js-yaml';
+import { dump, loadAll } from 'js-yaml';
 import { v4 as uuidv4 } from 'uuid';
 import type { GenerateRequest, MatchExpression } from '../types.js';
 
@@ -154,7 +154,7 @@ export function buildPolicyGeneratorDocument(req: GenerateRequest, manifestsDir:
 function dumpMultiDoc(docs: unknown[]): string {
   return docs
     .filter((d) => d !== null && d !== undefined)
-    .map((doc) => yaml.dump(doc, { lineWidth: -1, noRefs: true, sortKeys: false }))
+    .map((doc) => dump(doc, { lineWidth: -1, noRefs: true, sortKeys: false }))
     .join('---\n');
 }
 
@@ -163,7 +163,7 @@ export function injectClusterSets(generatedYaml: string, req: GenerateRequest): 
     return generatedYaml;
   }
 
-  const docs = yaml.loadAll(generatedYaml) as Record<string, unknown>[];
+  const docs = loadAll(generatedYaml) as Record<string, unknown>[];
   const clusterSets = req.placement.clusterSets;
   const namespace = req.namespace;
   const bindings = clusterSets.map((setName) => ({
@@ -220,7 +220,7 @@ export async function generatePolicyYaml(req: GenerateRequest): Promise<string> 
 
     const pgDoc = buildPolicyGeneratorDocument(req, 'manifests');
     const pgPath = path.join(workDir, 'policyGenerator.yaml');
-    await fs.writeFile(pgPath, yaml.dump(pgDoc, { lineWidth: -1, noRefs: true }), 'utf8');
+    await fs.writeFile(pgPath, dump(pgDoc, { lineWidth: -1, noRefs: true }), 'utf8');
 
     const { stdout, stderr } = await execFileAsync(POLICY_GENERATOR_BIN, [pgPath], {
       cwd: workDir,

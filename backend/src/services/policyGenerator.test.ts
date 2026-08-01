@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import yaml from 'js-yaml';
+import { dump, loadAll } from 'js-yaml';
 import {
   buildPolicyGeneratorDocument,
   injectClusterSets,
@@ -147,7 +147,7 @@ describe('injectClusterSets', () => {
         metadata: { name: 'binding-sample-policy', namespace: 'policies' },
       },
     ]
-      .map((d) => yaml.dump(d))
+      .map((d) => dump(d))
       .join('---\n');
 
     const req = baseRequest();
@@ -159,7 +159,7 @@ describe('injectClusterSets', () => {
     };
 
     const out = injectClusterSets(generated, req);
-    const docs = yaml.loadAll(out) as Record<string, unknown>[];
+    const docs = loadAll(out) as Record<string, unknown>[];
     expect(docs.filter((d) => d.kind === 'ManagedClusterSetBinding')).toHaveLength(2);
     const placement = docs.find((d) => d.kind === 'Placement') as {
       spec: { clusterSets: string[] };
