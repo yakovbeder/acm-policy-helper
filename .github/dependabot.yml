@@ -32,6 +32,13 @@ updates:
       - dependency-name: "@types/react-dom"
         update-types:
           - "version-update:semver-major"
+      # Keep express and @types/express majors paired (Express 5 changes req.params typing).
+      - dependency-name: express
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/express"
+        update-types:
+          - "version-update:semver-major"
     groups:
       npm-minor-patch:
         patterns:
