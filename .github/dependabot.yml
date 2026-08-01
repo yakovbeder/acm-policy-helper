@@ -19,6 +19,19 @@ updates:
       - dependency-name: "@vitejs/plugin-react"
         update-types:
           - "version-update:semver-major"
+      # Keep react / react-dom / types majors paired (React 19 needs all four together).
+      - dependency-name: react
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: react-dom
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/react"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@types/react-dom"
+        update-types:
+          - "version-update:semver-major"
     groups:
       npm-minor-patch:
         patterns:
