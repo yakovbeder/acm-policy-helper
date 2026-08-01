@@ -77,6 +77,44 @@ test.describe('Review download, copy, and apply', () => {
     await expect(page.getByText(/Placement\/e2e-apply-policy-placement.*created/)).toBeVisible();
   });
 
+  test('shows View Policy in ACM link after successful apply', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.route('**/api/console-url', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          consoleUrl: 'https://console-openshift-console.apps.example.com',
+        }),
+      });
+    });
+    await page.route('**/api/apply', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          results: [
+            { kind: 'Policy', name: 'e2e-acm-link', namespace: 'policies', status: 'created' },
+            { kind: 'Placement', name: 'placement-e2e-acm-link', namespace: 'policies', status: 'created' },
+            { kind: 'PlacementBinding', name: 'binding-e2e-acm-link', namespace: 'policies', status: 'created' },
+          ],
+        }),
+      });
+    });
+
+    await wizardToReview(page, { name: 'e2e-acm-link' });
+    await page.getByRole('button', { name: 'Apply to cluster' }).click();
+    await expect(page.getByText('Resources applied')).toBeVisible({ timeout: 15_000 });
+
+    const link = page.getByRole('link', { name: /View Policy in ACM/i });
+    await expect(link).toBeVisible({ timeout: 5_000 });
+    const href = await link.getAttribute('href');
+    expect(href).toBe(
+      'https://console-openshift-console.apps.example.com/multicloud/governance/policies/details/policies/e2e-acm-link'
+    );
+    expect(await link.getAttribute('target')).toBe('_blank');
+  });
+
   test('shows updated status when apply overwrites existing resources', async ({ page }) => {
     test.setTimeout(120_000);
     await page.route('**/api/apply', async (route) => {
