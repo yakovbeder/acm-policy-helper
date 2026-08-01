@@ -15,7 +15,7 @@
     "@kubernetes/client-node": "^1.0.0",
     "cors": "^2.8.5",
     "express": "^4.21.2",
-    "js-yaml": "^4.1.0",
+    "js-yaml": "^5.2.2",
     "uuid": "^14.0.1"
   },
   "devDependencies": {
