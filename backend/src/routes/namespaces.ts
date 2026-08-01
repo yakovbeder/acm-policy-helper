@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import { logger } from '../logger.js';
 import { listNamespaces } from '../services/kubeClient.js';
 
 const router = Router();
@@ -8,9 +9,8 @@ router.get('/', async (_req: Request, res: Response) => {
     const namespaces = await listNamespaces();
     res.json({ namespaces });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('List namespaces error:', message);
-    res.status(500).json({ error: message, namespaces: [] });
+    logger.error({ err, route: 'GET /api/namespaces' }, 'List namespaces error');
+    res.status(500).json({ error: 'Failed to list namespaces', namespaces: [] });
   }
 });
 

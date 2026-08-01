@@ -6,6 +6,10 @@ vi.mock('../services/kubeClient.js', () => ({
   listManagedClusterSets: vi.fn(async () => ['default', 'global', 'hub']),
 }));
 
+vi.mock('../logger.js', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+
 import clusterSetsRouter from './clusterSets.js';
 import { listManagedClusterSets } from '../services/kubeClient.js';
 

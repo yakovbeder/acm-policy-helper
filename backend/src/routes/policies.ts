@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import { logger } from '../logger.js';
 import {
   getPolicy,
   getPolicyBundle,
@@ -17,9 +18,8 @@ router.get('/:namespace/:name/bundle', async (req: Request<{ namespace: string; 
       res.status(404).json({ error: err.message });
       return;
     }
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('Get policy bundle error:', message);
-    res.status(500).json({ error: message });
+    logger.error({ err, route: 'GET /api/policies/:namespace/:name/bundle' }, 'Get policy bundle error');
+    res.status(500).json({ error: 'Failed to get policy bundle' });
   }
 });
 
@@ -33,9 +33,8 @@ router.get('/:namespace/:name', async (req: Request<{ namespace: string; name: s
       res.status(404).json({ error: err.message });
       return;
     }
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('Get policy error:', message);
-    res.status(500).json({ error: message });
+    logger.error({ err, route: 'GET /api/policies/:namespace/:name' }, 'Get policy error');
+    res.status(500).json({ error: 'Failed to get policy' });
   }
 });
 

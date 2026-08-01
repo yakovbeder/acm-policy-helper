@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import { logger } from '../logger.js';
 import { listPlacementTargets } from '../services/kubeClient.js';
 
 const router = Router();
@@ -19,10 +20,9 @@ router.get('/', async (req: Request, res: Response) => {
     const targets = await listPlacementTargets(namespace);
     res.json(targets);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error('List placement targets error:', message);
+    logger.error({ err, route: 'GET /api/placement-targets' }, 'List placement targets error');
     res.status(500).json({
-      error: message,
+      error: 'Failed to list placement targets',
       namespace: namespace.trim(),
       clusterSets: [],
       clusters: [],

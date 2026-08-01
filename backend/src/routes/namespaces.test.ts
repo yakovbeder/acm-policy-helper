@@ -6,6 +6,10 @@ vi.mock('../services/kubeClient.js', () => ({
   listNamespaces: vi.fn(async () => ['default', 'policies', 'open-cluster-management']),
 }));
 
+vi.mock('../logger.js', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+
 import namespacesRouter from './namespaces.js';
 import { listNamespaces } from '../services/kubeClient.js';
 
@@ -32,7 +36,7 @@ describe('GET /api/namespaces', () => {
     vi.mocked(listNamespaces).mockRejectedValueOnce(new Error('forbidden'));
     const res = await request(app).get('/api/namespaces');
     expect(res.status).toBe(500);
-    expect(res.body.error).toMatch(/forbidden/i);
+    expect(res.body.error).toBe('Failed to list namespaces');
     expect(res.body.namespaces).toEqual([]);
   });
 });

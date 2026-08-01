@@ -31,5 +31,9 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "overrides": {
+    "tldts": "7.4.5",
+    "tldts-core": "7.4.5"
   }
 }

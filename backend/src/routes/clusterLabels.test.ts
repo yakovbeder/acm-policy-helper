@@ -12,6 +12,10 @@ vi.mock('../services/kubeClient.js', () => ({
   })),
 }));
 
+vi.mock('../logger.js', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+
 import clusterLabelsRouter from './clusterLabels.js';
 import { listManagedClusterLabels } from '../services/kubeClient.js';
 

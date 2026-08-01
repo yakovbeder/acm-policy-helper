@@ -10,6 +10,10 @@ vi.mock('../services/kubeClient.js', () => ({
   })),
 }));
 
+vi.mock('../logger.js', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+
 import placementTargetsRouter from './placementTargets.js';
 import { listPlacementTargets } from '../services/kubeClient.js';
 
@@ -43,6 +47,7 @@ describe('GET /api/placement-targets', () => {
     vi.mocked(listPlacementTargets).mockRejectedValueOnce(new Error('forbidden'));
     const res = await request(app).get('/api/placement-targets').query({ namespace: 'acm-policy' });
     expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to list placement targets');
     expect(res.body.clusterSets).toEqual([]);
     expect(res.body.clusters).toEqual([]);
   });

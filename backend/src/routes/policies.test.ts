@@ -27,6 +27,10 @@ vi.mock('../services/kubeClient.js', () => ({
   },
 }));
 
+vi.mock('../logger.js', () => ({
+  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+}));
+
 import { getPolicy, getPolicyBundle, NotFoundError } from '../services/kubeClient.js';
 import policiesRouter from './policies.js';
 
