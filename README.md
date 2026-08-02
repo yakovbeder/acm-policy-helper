@@ -1,8 +1,8 @@
 # ACM Policy Helper
 
-Web UI for generating Open Cluster Management (ACM) governance policy bundles.
+Generate and apply ACM governance policy bundles — Policy, Placement, and PlacementBinding — from YAML manifests or built-in templates.
 
-Produces a complete `Policy` (with `ConfigurationPolicy`), `Placement`, `PlacementBinding`, and optionally `ManagedClusterSetBinding` from Kubernetes YAML manifests or built-in templates.
+Each Policy wraps a `ConfigurationPolicy`; cluster-set targeting can also emit a `ManagedClusterSetBinding`.
 
 Built-in templates cover cluster config and cluster health categories. Starters are adapted from:
 
