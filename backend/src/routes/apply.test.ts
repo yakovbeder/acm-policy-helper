@@ -2,10 +2,21 @@ import express from 'express';
 import request from 'supertest';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { ApplyClientError } = vi.hoisted(() => {
+  class ApplyClientError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = 'ApplyClientError';
+    }
+  }
+  return { ApplyClientError };
+});
+
 vi.mock('../services/kubeClient.js', () => ({
   applyYaml: vi.fn(async () => [
     { kind: 'Policy', name: 'demo', namespace: 'policies', status: 'created' },
   ]),
+  ApplyClientError,
 }));
 
 vi.mock('../logger.js', () => ({
@@ -55,9 +66,28 @@ describe('POST /api/apply', () => {
   it('returns 207 when some resources fail', async () => {
     vi.mocked(applyYaml).mockResolvedValueOnce([
       { kind: 'Policy', name: 'demo', status: 'created' },
-      { kind: 'Placement', name: 'p', status: 'error', message: 'denied' },
+      { kind: 'Placement', name: 'p', status: 'error', message: 'Failed to apply resource' },
     ]);
     const res = await request(app).post('/api/apply').send({ yaml: 'kind: Policy\n' });
     expect(res.status).toBe(207);
+  });
+
+  it('returns 400 for ApplyClientError without calling through as 500', async () => {
+    vi.mocked(applyYaml).mockRejectedValueOnce(
+      new ApplyClientError('No Kubernetes resources found in YAML')
+    );
+    const res = await request(app).post('/api/apply').send({ yaml: 'kind: Policy\n' });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('No Kubernetes resources found in YAML');
+  });
+
+  it('returns a generic 500 without leaking kube details', async () => {
+    vi.mocked(applyYaml).mockRejectedValueOnce(
+      new Error('Unauthorized: Bearer token invalid at api-server.internal:6443')
+    );
+    const res = await request(app).post('/api/apply').send({ yaml: 'kind: Policy\n' });
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Failed to apply YAML');
+    expect(JSON.stringify(res.body)).not.toMatch(/Bearer|Unauthorized|api-server\.internal/i);
   });
 });

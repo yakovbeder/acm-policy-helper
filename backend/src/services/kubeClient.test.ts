@@ -145,6 +145,22 @@ describe('applyObject', () => {
     expect(result.status).toBe('created');
     expect(customApi.createClusterCustomObject).toHaveBeenCalledOnce();
   });
+
+  it('returns a generic error message without leaking kube details', async () => {
+    customApi.getNamespacedCustomObject.mockRejectedValueOnce(
+      new Error('Unauthorized: Bearer token invalid')
+    );
+
+    const result = await applyObject(customApi as never, {
+      apiVersion: 'policy.open-cluster-management.io/v1',
+      kind: 'Policy',
+      metadata: { name: 'demo', namespace: 'policies' },
+    });
+
+    expect(result.status).toBe('error');
+    expect(result.message).toBe('Failed to apply resource');
+    expect(JSON.stringify(result)).not.toMatch(/Bearer|Unauthorized/i);
+  });
 });
 
 describe('applyYaml', () => {
@@ -170,7 +186,17 @@ metadata:
   });
 
   it('rejects empty YAML', async () => {
-    await expect(applyYaml('')).rejects.toThrow(/No Kubernetes resources/);
+    await expect(applyYaml('')).rejects.toMatchObject({
+      name: 'ApplyClientError',
+      message: expect.stringMatching(/No Kubernetes resources/),
+    });
+  });
+
+  it('rejects invalid YAML as ApplyClientError', async () => {
+    await expect(applyYaml(':\n  - *invalid')).rejects.toMatchObject({
+      name: 'ApplyClientError',
+      message: 'Invalid YAML',
+    });
   });
 
   it('rejects disallowed kinds without calling the API', async () => {
@@ -215,6 +241,9 @@ metadata:
       ].join('\n')
     ).join('\n---\n');
 
-    await expect(applyYaml(docs)).rejects.toThrow(/Too many resources/);
+    await expect(applyYaml(docs)).rejects.toMatchObject({
+      name: 'ApplyClientError',
+      message: expect.stringMatching(/Too many resources/),
+    });
   });
 });
