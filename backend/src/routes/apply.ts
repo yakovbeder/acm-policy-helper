@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import { ZodError } from 'zod';
 import { logger } from '../logger.js';
-import { applyYaml } from '../services/kubeClient.js';
+import { ApplyClientError, applyYaml } from '../services/kubeClient.js';
 import { ApplyRequestSchema, formatZodError } from '../validation.js';
 
 const router = Router();
@@ -17,10 +17,12 @@ router.post('/', async (req: Request, res: Response) => {
       res.status(400).json(formatZodError(err));
       return;
     }
-    const message = err instanceof Error ? err.message : String(err);
+    if (err instanceof ApplyClientError) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
     logger.error({ err, route: 'POST /api/apply' }, 'Apply error');
-    // YAML parse / empty-doc failures are client errors.
-    res.status(400).json({ error: message });
+    res.status(500).json({ error: 'Failed to apply YAML' });
   }
 });
 

@@ -183,9 +183,8 @@ export async function applyObject(
       throw err;
     }
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
     logger.error({ err, kind, name, namespace }, 'Apply object failed');
-    return { kind, name, namespace, status: 'error', message };
+    return { kind, name, namespace, status: 'error', message: 'Failed to apply resource' };
   }
 }
 
@@ -339,6 +338,14 @@ export class NotFoundError extends Error {
   }
 }
 
+/** Client-shape apply failures (invalid/empty YAML, doc limits). Safe to return as 400. */
+export class ApplyClientError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ApplyClientError';
+  }
+}
+
 async function getNamespacedObject(
   customApi: k8s.CustomObjectsApi,
   group: string,
@@ -457,16 +464,22 @@ export async function getConsoleUrl(): Promise<string | null> {
 }
 
 export async function applyYaml(yamlContent: string): Promise<ApplyResult[]> {
-  const docs = (loadAll(yamlContent) as (KubeObject | null)[]).filter(
-    (d): d is KubeObject => Boolean(d && typeof d === 'object' && d.kind)
-  );
+  let docs: KubeObject[];
+  try {
+    docs = (loadAll(yamlContent) as (KubeObject | null)[]).filter(
+      (d): d is KubeObject => Boolean(d && typeof d === 'object' && d.kind)
+    );
+  } catch (err: unknown) {
+    logger.error({ err }, 'YAML parse failed');
+    throw new ApplyClientError('Invalid YAML');
+  }
 
   if (!docs.length) {
-    throw new Error('No Kubernetes resources found in YAML');
+    throw new ApplyClientError('No Kubernetes resources found in YAML');
   }
 
   if (docs.length > MAX_APPLY_DOCUMENTS) {
-    throw new Error(
+    throw new ApplyClientError(
       `Too many resources in YAML (max ${MAX_APPLY_DOCUMENTS}, got ${docs.length})`
     );
   }
