@@ -39,10 +39,16 @@ updates:
       - dependency-name: "@types/express"
         update-types:
           - "version-update:semver-major"
+    # Keep production runtime minors (zod, express, js-yaml, PatternFly)
+    # out of the same PR as test/build tooling.
     groups:
-      npm-minor-patch:
-        patterns:
-          - "*"
+      production-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      development-minor-patch:
+        dependency-type: development
         update-types:
           - minor
           - patch
