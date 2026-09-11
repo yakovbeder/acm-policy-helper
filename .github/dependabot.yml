@@ -39,6 +39,13 @@ updates:
       - dependency-name: "@types/express"
         update-types:
           - "version-update:semver-major"
+      # Keep vitest and @vitest/coverage-v8 majors paired (coverage-v8 5 peers vitest 5).
+      - dependency-name: vitest
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@vitest/coverage-v8"
+        update-types:
+          - "version-update:semver-major"
     # Keep production runtime minors (zod, express, js-yaml, PatternFly)
     # out of the same PR as test/build tooling.
     groups:
