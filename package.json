@@ -28,7 +28,7 @@
     "@commitlint/config-conventional": "^21.2.0",
     "concurrently": "^10.0.5",
     "husky": "^9.1.7",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   },
   "engines": {
     "node": ">=20"
