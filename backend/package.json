@@ -14,11 +14,11 @@
   "dependencies": {
     "@kubernetes/client-node": "^2.0.0",
     "cors": "^2.8.5",
-    "express": "^5.2.1",
+    "express": "^5.3.0",
     "js-yaml": "^5.4.3",
     "pino": "^10.4.0",
-    "uuid": "^14.0.2",
-    "zod": "^4.6.5"
+    "uuid": "^14.0.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
